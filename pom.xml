@@ -1,0 +1,48 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>io.sarl.extensions.sre.simulation</groupId>
+	<artifactId>io.sarl.extensions.sre.simulation</artifactId>
+	<version>0.8.0-SNAPSHOT</version>
+	<name>SARL Run-time Environment for Simulation</name>
+
+	<properties>
+		<sarl.version>0.8.0-SNAPSHOT</sarl.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>io.sarl.sre.lite</groupId>
+			<artifactId>io.sarl.sre.lite</artifactId>
+			<version>${sarl.version}</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<!-- Version 3.7.0 depends on a library that is compiled with Java 9! -->
+				<version>3.6.2</version>
+				<configuration>
+					<source>${compiler.level}</source>
+					<target>${compiler.level}</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>io.sarl.maven</groupId>
+				<artifactId>sarl-maven-plugin</artifactId>
+				<version>${sarl.version}</version>
+				<extensions>true</extensions>
+				<configuration>
+					<source>${compiler.level}</source>
+					<target>${compiler.level}</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
