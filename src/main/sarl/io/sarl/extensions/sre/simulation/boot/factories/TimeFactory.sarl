@@ -100,6 +100,20 @@ class TimeFactory {
 	 */
 	public static val TIME_UNIT_VALUE = TimeUnit::SECONDS
 
+	/** 
+	 * Name of the property that indicates if the time progression should be displayed within the logs.
+	 * 
+	 * @see #TIME_PROGRESSION_IN_LOGS_VALUE
+	 */
+	public static val TIME_PROGRESSION_IN_LOGS_NAME = TIME_PREFIX + ".timeProgressionInLogs"
+
+	/** 
+	 * The default value indicating that the time progression should be displayed within the logs.
+	 * 
+	 * @see #TIME_PROGRESSION_IN_LOGS_NAME
+	 */
+	public static val TIME_PROGRESSION_IN_LOGS_VALUE = true
+
 
 	@Accessors(PUBLIC_GETTER)
 	var timeStep : double = TIME_STEP_VALUE
@@ -113,6 +127,10 @@ class TimeFactory {
 	@Accessors(PUBLIC_GETTER)
 	var unit : TimeUnit = TIME_UNIT_VALUE
 
+	@Accessors(PUBLIC_GETTER)
+	var timeProgressionInLogs : boolean = TIME_PROGRESSION_IN_LOGS_VALUE
+
+	
 	/** Replies the configuration factory for the time.
 	 *
 	 * @param configFactory the general configuration factory.
@@ -173,6 +191,16 @@ class TimeFactory {
 		} else {
 			this.unit = unit
 		}
+	}
+
+	/** 
+	 * Change the flag that enables or disables to show the time progression in the logs.
+	 * 
+	 * @param unit the new time unit.
+	 */
+	@BQConfigProperty("boolean flag that enables to show the time progression in logs")
+	def setTimeProgressionInLogs(flag : boolean) : void {
+		this.timeProgressionInLogs = flag
 	}
 
 }

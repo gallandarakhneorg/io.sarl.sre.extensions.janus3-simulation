@@ -29,6 +29,7 @@ import org.arakhne.afc.util.ListenerCollection
 import io.sarl.sre.services.logging.LoggingService
 import com.google.inject.Inject
 import java.text.MessageFormat
+import io.sarl.extensions.sre.simulation.boot.factories.TimeFactory
 
 /**
  * Time service based on a simulated time.
@@ -50,10 +51,10 @@ class SimulatedTimeService extends AbstractSreService implements TimeService {
 
 	var simulatedTime = 0.0
 
-	val simulatedPrecision : TimeUnit
-
 	var loggingService : LoggingService
 
+	var timeConfiguration : TimeFactory
+	
 	/** Change the logging service that should be used by this time service.
 	 *
 	 * @param loggingService the logging service.
@@ -62,6 +63,32 @@ class SimulatedTimeService extends AbstractSreService implements TimeService {
 	def setLoggingService(loggingService : LoggingService) {
 		assert loggingService !== null
 		this.loggingService = loggingService
+	}
+
+	/** Replies the logging service that should be used by this time service.
+	 * 
+	 * @return the logging service.
+	 */
+	protected def getLoggingService : LoggingService {
+		this.loggingService
+	}
+
+	/** Change the time configuration accessor.
+	 * 
+	 * @param config the accessor to the time configuration.
+	 */
+	@Inject
+	def setTimeConfiguration(config : TimeFactory) {
+		assert config !== null
+		this.timeConfiguration = config
+	}
+
+	/** Replies the time configuration accessor.
+	 * 
+	 * @return the accessor to the time configuration.
+	 */
+	protected def getTimeConfiguration : TimeFactory {
+		this.timeConfiguration
 	}
 
 	/** Replies the OS current time.
@@ -73,16 +100,13 @@ class SimulatedTimeService extends AbstractSreService implements TimeService {
 	}
 
 	/** Create a simulated time service.
-	 *
-	 * @param simulatedPrecision is the time unit of the simulated time.
 	 */
-	new (simulatedPrecision : TimeUnit = TimeUnit::SECONDS) {
-		this.simulatedPrecision = simulatedPrecision;
+	new {
 		this.osTimeOfPreviousStep = this.OSCurrentTime
 	}
 
 	def getTimePrecision : TimeUnit {
-		this.simulatedPrecision
+		this.timeConfiguration.unit
 	}
 
 	def getTime(timeUnit : TimeUnit) : double {
@@ -103,9 +127,11 @@ class SimulatedTimeService extends AbstractSreService implements TimeService {
 		this.simulatedTime += timeDelta
 		var osdelta = this.OSCurrentTime - this.osTimeOfPreviousStep
 		this.osFactor = osdelta / timeDelta
-		this.loggingService.kernelLogger.info [
-			MessageFormat::format(Messages::SimulatedTimeService_0, this.simulatedTime)
-		]
+		if (this.timeConfiguration.timeProgressionInLogs) {
+			this.loggingService.kernelLogger.info [
+				MessageFormat::format(Messages::SimulatedTimeService_0, this.simulatedTime)
+			]
+		}
 		fireTimeChanged
 	}
 

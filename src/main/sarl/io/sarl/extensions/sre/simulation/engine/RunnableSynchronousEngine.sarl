@@ -128,10 +128,25 @@ class RunnableSynchronousEngine implements Runnable {
 			this.logger.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
 		}
 		try {
-			this.timeManager.evolveTimeIfPossible(this.timeConfiguration.timeStep)
+			this.timeManager.evolveTimeIfPossible(this.timeEvolution)
 		} catch (e : Throwable) {
 			this.logger.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
 		}
+	}
+
+	/** Replies the evolution to apply to the simulation time.
+	 *
+	 * <p>The time evolution is also know as the time step. It is used for
+	 * in increasing the simulation time at the end of each step of the
+	 * simulation loop.
+	 *
+	 * <p>By default, this function replies the {@link TimeFactory#getTimeStep() value}
+	 * of the time manager's configuration.
+	 *
+	 * @return the time evolution.
+	 */
+	protected def getTimeEvolution : double {
+		this.timeConfiguration.timeStep
 	}
 
 	/** Run all the agents.
