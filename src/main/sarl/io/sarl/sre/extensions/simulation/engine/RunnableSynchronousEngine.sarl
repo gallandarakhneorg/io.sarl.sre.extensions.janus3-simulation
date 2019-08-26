@@ -1,0 +1,216 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2019 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.sre.extensions.simulation.engine
+
+import com.google.inject.Inject
+import io.sarl.lang.annotation.PrivateAPI
+import io.sarl.lang.core.Agent
+import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
+import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig
+import io.sarl.sre.extensions.simulation.skills.SynchronizedEventBus
+import io.sarl.sre.services.lifecycle.LifecycleService
+import io.sarl.sre.services.logging.LoggingService
+import io.sarl.sre.services.time.TimeService
+import java.util.logging.Level
+
+import static java.lang.Thread.*
+
+import static extension io.sarl.sre.services.lifecycle.AgentLife.*
+import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
+
+/**
+ * Execution engine that imposes synchronous execution of the agents for a single simulation step.
+ * 
+ * @author $Author: sgalland$
+ * @author $Author: gcich$
+ * @author $Author: lknapen$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ * @since 0.8.0
+ */
+class RunnableSynchronousEngine implements Runnable {
+
+	var timeConfiguration : TimeConfig
+
+	var timeManager : TimeService
+
+	var lifecycle : SimulationLifecycleService
+
+	var scheduler : AgentScheduler
+
+	var logger : LoggingService
+
+	@Inject
+	def setAgentScheduler(scheduler : AgentScheduler) {
+		this.scheduler = scheduler
+	}
+
+	@Inject
+	def setTimeConfiguration(simulationConfiguration : SimulationConfig) {
+		this.timeConfiguration = simulationConfiguration.time
+	}
+	
+	def setTimeConfiguration(timeConfiguration : TimeConfig) {
+		this.timeConfiguration = timeConfiguration
+	}
+
+	@Inject
+	def setTimeManager(timeService : TimeService) {
+		this.timeManager = timeService
+	}
+
+	@Inject
+	def setLifecycleService(lifecycleService : LifecycleService) {
+		this.lifecycle = lifecycleService as SimulationLifecycleService
+	}
+
+	@Inject
+	def setLoggingService(logger : LoggingService) {
+		this.logger = logger
+	}
+
+	/** Run one step of the simulation loop.
+	 */
+	@SuppressWarnings("discouraged_reference")
+	override run {
+		this.timeManager.timeIfPossible = this.timeConfiguration.startTime
+		val delay = this.timeConfiguration.simulationLoopDelay
+		waitForAgentRegistration
+		if (delay <= 0) {
+			do {
+				runOneSimulationStep
+				yield
+			} while (this.lifecycle.hasAgent)
+		} else {
+			do {
+				runOneSimulationStep
+				sleep(delay)
+			} while (this.lifecycle.hasAgent)
+		}
+	}
+
+	/** Invoked for waiting an agent registration.
+	 * Usually this function is called at the start-up of the simulator.
+	 */
+	@SuppressWarnings("discouraged_reference")
+	protected def waitForAgentRegistration {
+		while (!this.lifecycle.hasAgent) {
+			this.lifecycle.synchronizeAgentList
+			yield
+		}
+	}
+
+	/** Run a single simulation step.
+	 * This function runs the agents, synchronizes the internal data structures, and makes the
+	 * time evolving.
+	 */
+	protected def runOneSimulationStep {
+		try {
+			this.lifecycle.agents.runAgents
+		} catch (e : Throwable) {
+			this.logger.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
+		}
+		try {
+			this.lifecycle.synchronizeAgentList
+		} catch (e : Throwable) {
+			this.logger.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
+		}
+		try {
+			this.timeManager.evolveTimeIfPossible(this.timeEvolution)
+		} catch (e : Throwable) {
+			this.logger.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
+		}
+	}
+
+	/** Replies the evolution to apply to the simulation time.
+	 *
+	 * <p>The time evolution is also know as the time step. It is used for
+	 * in increasing the simulation time at the end of each step of the
+	 * simulation loop.
+	 *
+	 * <p>By default, this function replies the {@link TimeFactory#getTimeStep() value}
+	 * of the time manager's configuration.
+	 *
+	 * @return the time evolution.
+	 */
+	protected def getTimeEvolution : double {
+		this.timeConfiguration.timeStep
+	}
+
+	/** Run all the agents.
+	 *
+	 * @param agents the agents to run.
+	 */
+	protected def runAgents(agents : Iterable<Agent>) {
+		assert agents !== null
+		agents.preRunAgents
+		var agentIterator = this.scheduler.schedule(agents)
+		while (agentIterator.hasNext) {
+			agentIterator.next.runSingleAgent
+		}
+		agents.postRunAgents
+	}
+
+	/** Called before running the agents.
+	 * 
+	 * @param agents the agents to run.
+	 */
+	protected def preRunAgents(agents : Iterable<Agent>) {
+		//
+	}
+
+	/** Called after running the agents.
+	 *
+	 * @param agents the agents to run.
+	 */
+	protected def postRunAgents(agents : Iterable<Agent>) {
+		//
+	}
+
+	
+	/** Run one agent.
+	 * 
+	 * @param agent the agent to run.
+	 */
+	@SuppressWarnings("use_reserved_sarl_annotation")
+	@PrivateAPI(isCallerOnly = true)
+	protected def runSingleAgent(^agent : Agent) : void {
+		var ^capacity = ^agent.life.eventBus
+		assert ^capacity !== null
+		val bus = ^capacity.getEventBus(typeof(SynchronizedEventBus))
+		assert bus !== null
+		bus.fireBufferedEventsOnBus(this.timeManager.getTime(this.timeConfiguration.unit))
+	}
+
+}
+
+/** 
+ * Annotation for Runnable that is an execution engine.
+ * 
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ * @since 0.10
+ */
+annotation SynchronousEngine {
+}

@@ -1,0 +1,158 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2019 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.sarl.sre.extensions.simulation.tests.units.skills
+
+import io.sarl.lang.core.Address
+import io.sarl.lang.core.Event
+import io.sarl.revision.BehaviorGuardEvaluatorRegistry
+import io.sarl.sre.extensions.simulation.skills.SynchronizedEventBus
+import io.sarl.sre.extensions.simulation.skills.TimestampedEvent
+import io.sarl.sre.services.executor.ExecutorService
+import io.sarl.tests.api.AbstractSarlTest
+import io.sarl.tests.api.Nullable
+import java.util.logging.Logger
+import org.junit.Before
+import org.junit.Test
+
+import static extension org.mockito.ArgumentMatchers.*
+import static extension org.mockito.Mockito.*
+
+/**
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ */
+@SuppressWarnings("all")
+class SynchronizedEventBusTest extends AbstractSarlTest {
+
+	@Nullable
+	var executor : ExecutorService
+
+	@Nullable
+	var dispatcher : BehaviorGuardEvaluatorRegistry
+
+	@Nullable
+	var eventBus : SynchronizedEventBus
+
+	@Nullable
+	var logger : Logger
+
+	@Before
+	def setUp : void {
+		this.logger = typeof(Logger).mock
+		this.executor = typeof(ExecutorService).mock
+		this.dispatcher = typeof(BehaviorGuardEvaluatorRegistry).mock
+		this.eventBus = new SynchronizedEventBus(this.executor, this.dispatcher)
+	}
+
+	@Test
+	def asyncDispatch_standardEvent : void {
+		var ^event = typeof(Event).mock
+		when(^event.source).thenReturn(typeof(Address).mock)
+
+		this.eventBus.asyncDispatch(^event, this.logger)
+
+		var events = this.eventBus.bufferedEvents
+		var iterator = events.iterator
+		iterator.hasNext.assertTrue
+		^event.assertSame(iterator.next)
+		iterator.hasNext.assertFalse
+
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def asyncDispatch_timestampEvent : void {
+		var ^event = new TestEvent(123.456).spy
+
+		this.eventBus.asyncDispatch(^event, this.logger)
+
+		var events = this.eventBus.bufferedEvents
+		var iterator = events.iterator
+		iterator.hasNext.assertTrue
+		^event.assertSame(iterator.next)
+		iterator.hasNext.assertFalse
+
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def fireBufferedEventsOnBus_emptyBuffer : void {
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def fireBufferedEventsOnBus_oneBufferedStandardEvent : void {
+		var event0 = typeof(Event).mock
+		this.eventBus.asyncDispatch(event0, this.logger)
+
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(only).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def fireBufferedEventsOnBus_oneBufferedTimestampEvent0 : void {
+		var event0 = new TestEvent(123.456).spy
+		this.eventBus.asyncDispatch(event0, this.logger)
+
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(only).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def fireBufferedEventsOnBus_oneBufferedTimestampEvent1 : void {
+		var event0 = new TestEvent(123456.0).spy
+		this.eventBus.asyncDispatch(event0, this.logger)
+
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def fireBufferedEventsOnBus_twoBufferedTimestampEvent0 : void {
+		var event0 = new TestEvent(123.456).spy
+		this.eventBus.asyncDispatch(event0, this.logger)
+		var event1 = typeof(Event).mock
+		this.eventBus.asyncDispatch(event1, this.logger)
+
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(2.times).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	/**
+	 * @author $Author: sgalland$
+	 * @version $FullVersion$
+	 * @mavengroupid $GroupId$
+	 * @mavenartifactid $ArtifactId$
+	 */
+	public static class TestEvent extends TimestampedEvent {
+
+		new (time : double) {
+			super(time)
+			this.source = typeof(Address).mock
+		}
+
+	}
+
+}

@@ -1,0 +1,420 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2019 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.sarl.sre.extensions.simulation.tests.units.services.executor
+
+import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorService
+import io.sarl.sre.services.time.TimeService
+import io.sarl.sre.tests.units.services.executor.AbstractExecutorServiceTest
+import io.sarl.tests.api.Nullable
+import java.util.UUID
+import java.util.concurrent.Callable
+import java.util.concurrent.TimeUnit
+import java.util.logging.Level
+import org.junit.Test
+import org.mockito.ArgumentCaptor
+
+import static org.mockito.ArgumentMatchers.*
+
+import static extension org.mockito.Mockito.*
+
+/**
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ */
+class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<SynchronousExecutorService> {
+
+	@Nullable
+	var timeService : TimeService
+	
+	override newService : SynchronousExecutorService {
+		return new SynchronousExecutorService
+	}
+
+	protected def moveToTime(newTime : long) : void {
+		when(this.timeService.getTime(any)).thenAnswer [
+			var tu = it.getArgument(0) as TimeUnit
+			var t : double = tu.convert(newTime, TimeUnit::MILLISECONDS)
+			return t
+		]
+		this.service.timeChanged(this.timeService)
+	}
+
+	override setUp {
+		this.timeService = typeof(TimeService).mock
+		when(this.timeService.timePrecision).thenReturn(TimeUnit::MILLISECONDS)
+		super.setUp
+		this.service.timeService = this.timeService
+	}
+
+	@Test
+	def execute : void {
+		var run = typeof(Runnable).mock
+		this.service.executeAsap(this.logger, run)
+
+		run.verify.run
+
+		verifyZeroInteractions(this.logger)
+	}
+	
+	@Test
+	def execute_exception : void {
+		var run = new FailingRunnable().spy
+		
+		this.service.executeAsap(this.logger, run)
+
+		run.verify.run
+		
+		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
+		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
+		Level::SEVERE.assertSame(capturedLevel.value)
+		run.exception.assertSame(capturedException.value)
+	}
+
+	@Test
+	def submitRunnable : void {
+		var run = typeof(Runnable).mock
+		
+		var future = this.service.executeAsap(this.logger, run)
+		
+		future.assertNotNull
+		run.verify.run
+		verifyZeroInteractions(this.logger)
+	}
+	
+	@Test
+	def submitRunnable_exception : void {
+		var run = new FailingRunnable().spy
+		
+		var future = this.service.executeAsap(this.logger, run)
+		
+		future.assertNotNull
+		run.verify.run
+		
+		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
+		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
+		Level::SEVERE.assertSame(capturedLevel.value)
+		run.exception.assertSame(capturedException.value)
+	}
+
+	@Test
+	def submitRunnableFuture : void {
+		var value = UUID::randomUUID
+		var run = typeof(Runnable).mock
+		
+		var future = this.service.executeAsap(this.logger, value, run)
+		
+		future.assertNotNull
+		value.assertSame(future.get)
+		run.verify.run
+		verifyZeroInteractions(this.logger)
+	}
+
+	@Test
+	def submitRunnableFuture_exception : void {
+		var value = UUID::randomUUID
+		var run = new FailingRunnable().spy
+		
+		var future = this.service.executeAsap(this.logger, value, run)
+		
+		future.assertNotNull
+		value.assertSame(future.get)
+		run.verify.run
+		
+		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
+		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
+		Level::SEVERE.assertSame(capturedLevel.value)
+		run.exception.assertSame(capturedException.value)
+	}
+
+	@Test
+	def submitCallable : void {
+		var run = typeof(Callable).mock
+		
+		var future = this.service.executeAsap(this.logger, run)
+		
+		future.assertNotNull
+		verify(run).call
+		verifyZeroInteractions(this.logger)
+	}
+
+	@Test
+	def submitCallable_exception : void {
+		var run = new FailingCallable().spy
+		
+		var future = this.service.executeAsap(this.logger, run)
+		
+		future.assertNotNull
+		verify(run).call
+		
+		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
+		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
+		Level::SEVERE.assertSame(capturedLevel.value)
+		run.exception.assertSame(capturedException.value)
+	}
+
+	@Test
+	def scheduleRunnable : void {
+		var run = typeof(Runnable).mock
+		
+		var future = this.service.schedule(this.logger, 34, TimeUnit::DAYS, run)
+		
+		future.assertNotNull
+		verifyZeroInteractions(run)
+		
+		var tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		2937600000l.assertEquals(tasks.get(0).time as long)
+		
+		2937600000l.moveToTime
+		
+		run.verify.run
+
+		tasks = this.service.scheduledTasks
+		tasks.empty.assertTrue
+		verifyZeroInteractions(this.logger)
+	}
+
+	@Test
+	def scheduleRunnable_exception : void {
+		var run = new FailingRunnable().spy
+		
+		var future = this.service.schedule(this.logger, 34, TimeUnit::DAYS, run)
+		
+		future.assertNotNull
+		verifyZeroInteractions(run)
+		
+		var tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		2937600000l.assertEquals(tasks.get(0).time as long)
+		
+		2937600000l.moveToTime
+	
+		run.verify.run
+
+		tasks = this.service.scheduledTasks
+		tasks.empty.assertTrue
+
+		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
+		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
+		Level::SEVERE.assertSame(capturedLevel.value)
+		run.exception.assertSame(capturedException.value)
+	}
+
+	@Test
+	def scheduleCallable : void {
+		var run = typeof(Callable).mock
+		
+		var future = this.service.schedule(this.logger, 34, TimeUnit::DAYS, run)
+		
+		future.assertNotNull
+		verifyZeroInteractions(run)
+		
+		var tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		2937600000l.assertEquals(tasks.get(0).time as long)
+		
+		2937600000l.moveToTime
+
+		verify(run).call
+
+		tasks = this.service.scheduledTasks
+		tasks.empty.assertTrue
+		verifyZeroInteractions(this.logger)
+	}
+
+	@Test
+	def scheduleCallable_exception : void {
+		var run = new FailingCallable().spy
+		
+		var future = this.service.schedule(this.logger, 34, TimeUnit::DAYS, run)
+		
+		future.assertNotNull
+		verifyZeroInteractions(run)
+		
+		var tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		2937600000l.assertEquals(tasks.get(0).time as long)
+		
+		2937600000l.moveToTime
+		
+		verify(run).call
+
+		tasks = this.service.scheduledTasks
+		tasks.empty.assertTrue
+
+		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
+		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
+		Level::SEVERE.assertSame(capturedLevel.value)
+		run.exception.assertSame(capturedException.value)
+	}
+
+	@Test
+	def scheduleAtFixedRate : void {
+		var run = typeof(Runnable).mock
+		
+		var future = this.service.scheduleAtFixedRate(this.logger, 34, 4, TimeUnit::DAYS, run)
+		
+		future.assertNotNull
+		verifyZeroInteractions(run)
+		
+		var tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		2937600000l.assertEquals(tasks.get(0).time as long)
+		
+		2937600000l.moveToTime
+
+		run.verify.run
+
+		tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		3283200000l.assertEquals(tasks.get(0).time as long)
+
+		verifyZeroInteractions(this.logger);
+	}
+
+	@Test
+	def scheduleAtFixedRate_exception : void {
+		var run = new FailingRunnable().spy
+		
+		var future = this.service.scheduleAtFixedRate(this.logger, 34, 4, TimeUnit::DAYS, run)
+		
+		future.assertNotNull
+		verifyZeroInteractions(run)
+		
+		var tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		2937600000l.assertEquals(tasks.get(0).time as long)
+		
+		2937600000l.moveToTime
+
+		run.verify.run
+
+		tasks = this.service.scheduledTasks
+		tasks.empty.assertTrue
+
+		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
+		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
+		Level::SEVERE.assertSame(capturedLevel.value)
+		run.exception.assertSame(capturedException.value)
+	}
+
+	@Test
+	def scheduleWithFixedDelay : void {
+		var run = typeof(Runnable).mock
+		
+		var future = this.service.scheduleWithFixedDelay(this.logger, 34, 4, TimeUnit::DAYS, run)
+		
+		future.assertNotNull
+		verifyZeroInteractions(run)
+		
+		var tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		2937600000l.assertEquals(tasks.get(0).time as long)
+		
+		2937600000l.moveToTime
+
+		run.verify.run
+
+		tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		3283200000l.assertEquals(tasks.get(0).time as long)
+
+		verifyZeroInteractions(this.logger)
+	}
+
+	@Test
+	def scheduleWithFixedDelay_exception : void {
+		var run = new FailingRunnable().spy
+		
+		var future = this.service.scheduleWithFixedDelay(this.logger, 34, 4, TimeUnit::DAYS, run)
+		
+		future.assertNotNull
+		verifyZeroInteractions(run)
+		
+		var tasks = this.service.scheduledTasks
+		tasks.assertNotNull
+		1.assertEquals(tasks.size)
+		future.assertSame(tasks.get(0))
+		2937600000l.assertEquals(tasks.get(0).time as long)
+		
+		2937600000l.moveToTime
+
+		run.verify.run
+
+		tasks = this.service.scheduledTasks
+		tasks.empty.assertTrue
+
+		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
+		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
+		Level::SEVERE.assertSame(capturedLevel.value)
+		run.exception.assertSame(capturedException.value)
+	}
+
+	private static class FailingRunnable implements Runnable {
+		val ex = new RuntimeException
+		override run {
+			throw this.ex
+		}
+		def getException : RuntimeException {
+			this.ex
+		}
+	}
+
+	private static class FailingCallable implements Callable<Object> {
+		val ex = new RuntimeException
+		override call : Object {
+			throw this.ex
+		}
+		def getException : RuntimeException {
+			this.ex
+		}
+	}
+
+}

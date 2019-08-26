@@ -1,28 +1,40 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>io.sarl.extensions.sre.simulation</groupId>
-	<artifactId>io.sarl.extensions.sre.simulation</artifactId>
-	<version>0.8.0-SNAPSHOT</version>
+	<groupId>io.sarl.sre.extensions.janus3-simulation</groupId>
+	<artifactId>janus3-simulation</artifactId>
+	<version>0.10.0-SNAPSHOT</version>
 	<name>SARL Run-time Environment for Simulation</name>
 
 	<properties>
-		<sarl.version>0.8.0-SNAPSHOT</sarl.version>
+		<sarl.version>0.10.0-SNAPSHOT</sarl.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<compiler.level>1.8</compiler.level>
 	</properties>
 
 	<dependencies>
 		<dependency>
-			<groupId>io.sarl.sre.lite</groupId>
-			<artifactId>io.sarl.sre.lite</artifactId>
+			<groupId>io.sarl.sre.janus3</groupId>
+			<artifactId>janus3</artifactId>
 			<version>${sarl.version}</version>
 		</dependency>
-
+		<dependency>
+			<groupId>io.sarl.sre.janus3</groupId>
+			<artifactId>janus3</artifactId>
+			<version>${sarl.version}</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>io.sarl</groupId>
 			<artifactId>io.sarl.tests.api</artifactId>
 			<version>${sarl.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.javassist</groupId>
+			<artifactId>javassist</artifactId>
+			<version>3.25.0-GA</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
@@ -31,8 +43,7 @@
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<!-- Version 3.7.0 depends on a library that is compiled with Java 9! -->
-				<version>3.6.2</version>
+				<version>3.8.1</version>
 				<configuration>
 					<source>${compiler.level}</source>
 					<target>${compiler.level}</target>
@@ -49,31 +60,6 @@
 					<target>${compiler.level}</target>
 					<encoding>${project.build.sourceEncoding}</encoding>
 				</configuration>
-			</plugin>
-			<plugin>
-				<!-- to create a jar with all dependencies -->
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<version>3.1.0</version>
-				<configuration>
-					<descriptors>
-						<descriptor>with-dependencies.xml</descriptor>
-					</descriptors>
-					<archive>
-						<manifest>
-							<mainClass>io.sarl.sre.boot.Boot</mainClass>
-						</manifest>
-					</archive>
-				</configuration>
-				<executions>
-					<execution>
-						<id>make-assembly</id>
-						<phase>package</phase>
-						<goals>
-							<goal>single</goal>
-						</goals>
-					</execution>
-				</executions>
 			</plugin>
 		</plugins>
 	</build>

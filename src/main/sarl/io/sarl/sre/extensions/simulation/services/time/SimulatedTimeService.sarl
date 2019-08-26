@@ -1,0 +1,139 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2019 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.sre.extensions.simulation.services.time
+
+import com.google.inject.Inject
+import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
+import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig
+import io.sarl.sre.services.logging.LoggingService
+import io.sarl.sre.services.time.AbstractTimeService
+import java.text.MessageFormat
+import java.util.concurrent.TimeUnit
+import javax.inject.Singleton
+import org.eclipse.xtend.lib.annotations.Accessors
+
+/**
+ * Time service based on a simulated time.
+ * 
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ * @since 0.10
+ */
+@Singleton
+class SimulatedTimeService extends AbstractTimeService {
+
+	var simulatedTime = 0.0
+
+	var osTimeOfPreviousStep = 0.0
+
+	var osFactor = 1.0
+
+	@Accessors(PUBLIC_GETTER)
+	var timeConfiguration : TimeConfig
+
+	@Accessors(PUBLIC_GETTER)
+	var loggingService : LoggingService
+
+	/** Create a simulated time service.
+	 */
+	new {
+		this.osTimeOfPreviousStep = this.OSCurrentTime
+	}
+
+	/** Change the logging service that should be used by this time service.
+	 *
+	 * @param loggingService the logging service.
+	 */
+	@Inject
+	def setLoggingService(loggingService : LoggingService) {
+		assert loggingService !== null
+		this.loggingService = loggingService
+	}
+
+	/** Change the time configuration accessor.
+	 * 
+	 * @param config the accessor to the simulation configuration.
+	 */
+	@Inject
+	def setTimeConfiguration(config : SimulationConfig) {
+		assert config !== null
+		this.timeConfiguration = config.time
+	}
+	
+	/** Change the time configuration accessor.
+	 *
+	 * @param config the accessor to the time configuration.
+	 */
+	def setTimeConfiguration(config : TimeConfig) {
+		assert config !== null
+		this.timeConfiguration = config
+	}
+
+
+	def getTime(timeUnit : TimeUnit) : double {
+		 val tp = timePrecision
+		 val tu = timeUnit ?: tp
+		 if (tu === tp) {
+		 	return this.simulatedTime
+		 }
+		 return this.simulatedTime.convertFromTo(tp, tu)
+	}
+	
+	def getOSCurrentTime : long {
+		System::currentTimeMillis
+	}
+	
+	def getOSTimeFactor : double {
+		 this.osFactor
+	}
+
+	def getTimePrecision : TimeUnit {
+		this.timeConfiguration.unit
+	}
+
+	def evolveTimeIfPossible(timeDelta : double = 0.0) : boolean {
+		if (timeDelta > 0.0) {
+			this.simulatedTime += timeDelta
+			var osdelta = this.OSCurrentTime - this.osTimeOfPreviousStep
+			this.osFactor = osdelta / timeDelta
+			if (this.timeConfiguration.timeProgressionInLogs) {
+				this.loggingService.kernelLogger.info [
+					MessageFormat::format(Messages::SimulatedTimeService_0, this.simulatedTime)
+				]
+			}
+			fireTimeChanged
+			return true
+		}
+		return false
+	}
+	
+	def setTimeIfPossible(time : double) : boolean {
+		if (time != this.simulatedTime) {
+			this.simulatedTime = time
+			fireTimeChanged
+			return true
+		}
+		return false
+	}
+	
+}
