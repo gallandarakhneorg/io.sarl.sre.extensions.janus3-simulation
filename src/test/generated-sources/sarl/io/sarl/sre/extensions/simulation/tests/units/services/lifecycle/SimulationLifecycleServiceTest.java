@@ -209,7 +209,7 @@ public class SimulationLifecycleServiceTest extends AbstractSarlTest {
   public void hasAgent_1_noSync() {
     UUID id0 = UUID.randomUUID();
     this.addAgentMock(id0);
-    Assert.assertFalse(this.service.hasAgent());
+    Assert.assertTrue(this.service.hasAgent());
   }
   
   @Test
@@ -219,7 +219,7 @@ public class SimulationLifecycleServiceTest extends AbstractSarlTest {
     UUID id1 = UUID.randomUUID();
     this.addAgentMock(id0);
     this.addAgentMock(id1);
-    Assert.assertFalse(this.service.hasAgent());
+    Assert.assertTrue(this.service.hasAgent());
   }
   
   @Test

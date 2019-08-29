@@ -159,7 +159,7 @@ class SimulationLifecycleServiceTest extends AbstractSarlTest {
 	def hasAgent_1_noSync : void {
 		var id0 = UUID::randomUUID
 		addAgentMock(id0)
-		this.service.hasAgent.assertFalse
+		this.service.hasAgent.assertTrue
 	}
 
 	@Test
@@ -168,7 +168,7 @@ class SimulationLifecycleServiceTest extends AbstractSarlTest {
 		var id1 = UUID::randomUUID
 		addAgentMock(id0)
 		addAgentMock(id1)
-		this.service.hasAgent.assertFalse
+		this.service.hasAgent.assertTrue
 	}
 
 	@Test
