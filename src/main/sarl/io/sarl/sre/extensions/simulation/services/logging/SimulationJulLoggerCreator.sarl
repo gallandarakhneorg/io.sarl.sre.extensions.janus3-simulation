@@ -1,0 +1,77 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2018 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.sre.extensions.simulation.services.logging
+
+import io.sarl.sre.services.logging.JulLoggerCreator
+import io.sarl.sre.services.time.TimeService
+import java.io.PrintStream
+import java.util.logging.Formatter
+import java.util.logging.Level
+import java.util.logging.Logger
+import javax.inject.Provider
+
+/** 
+ * Helper for creating a JUL logger for the simulation framework.
+ * The loggers uses a specific message with the simulation time stamp.
+ * 
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ */
+class SimulationJulLoggerCreator extends JulLoggerCreator {
+
+	val timeProvider : Provider<TimeService>
+
+	/** Build a logger creator.
+	 * 
+	 * @param defaultLevel the logging level for new loggers.
+	 * @param defaultProgramName the default name of the program.
+	 * @param loggerProvider the provider of loggers.
+	 * @param timeProvider the provider of simulation time.
+	 * @param formatter the log message formatter to be used.
+	 */
+	new (defaultLevel : Level, defaultProgramName : String, loggerProvider : Provider<Logger>,
+		timeProvider : Provider<TimeService>,
+		formatter : Formatter = null) {
+		super(defaultLevel, defaultProgramName, loggerProvider, formatter)
+		assert timeProvider !== null
+		this.timeProvider = timeProvider
+	}
+	
+	protected override createFormatter : Formatter {
+		new SimulationFormatter(this.timeProvider)
+	}
+
+	override createConsoleLogger(name : String, output : PrintStream) : Logger {
+		var logger = super.createConsoleLogger(name, output)
+		return logger
+	}
+
+	override createPlatformLogger : Logger {
+		super.createPlatformLogger
+	}
+
+	override createModuleLogger(name : String, parent : Logger) : Logger {
+		super.createModuleLogger(name, parent)
+	}
+
+}

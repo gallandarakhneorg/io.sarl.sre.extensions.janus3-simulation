@@ -1,0 +1,124 @@
+/* 
+ * $Id$
+ * 
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ * 
+ * Copyright (C) 2014-2018 the original authors or authors.
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.sre.extensions.simulation.services.logging
+
+import java.util.logging.Formatter
+import java.util.Date
+import java.util.logging.LogRecord
+import java.io.StringWriter
+import java.io.PrintWriter
+import javax.inject.Provider
+import io.sarl.sre.services.time.TimeService
+
+/** 
+ * Print a brief summary of the {@code LogRecord} in a human readable
+ * format. The summary will typically be 1 or 2 lines.
+ * 
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ */
+class SimulationFormatter extends Formatter {
+
+	/** Default format of a log message. The parameters for the format string are:
+	 * <ul>
+	 * <li><code>%1</code>: the system date,</li>
+	 * <li><code>%2</code>: the name of the calling function,</li>
+	 * <li><code>%3</code>: the name of the logger,</li>
+	 * <li><code>%4</code>: the logging level,</li>
+	 * <li><code>%5</code>: the message,</li>
+	 * <li><code>%6</code>: the throwable,</li>
+	 * <li><code>%7</code>: the simulation time, and</li>
+	 * </ul>
+	 */
+	public static val DEFAULT_FORMAT = "[%4$s, %1$tl:%1$tM:%1$tS%1$tp, t=%7$.1f, %3$s] %5$s%6$s%n"
+
+	val dat = new Date
+
+	val timeProvider : Provider<TimeService>
+
+	var timeService : TimeService
+
+	/** Constructor.
+	 *
+	 * @param timeProvider the provider of time service.
+	 */
+	new(timeProvider : Provider<TimeService>) {
+		assert timeProvider !== null
+		this.timeProvider = timeProvider
+	}
+
+	/** Replies the time service.
+	 *
+	 * @return the time service.
+	 */
+	protected def getTimeService : TimeService {
+		if (this.timeService === null) {
+			this.timeService = this.timeProvider.get
+		}
+		return this.timeService
+	}
+
+	/** Replies the format specification of a log line.
+	 *
+	 * <p>The syntax of the format is the same as {@link String#format(String, Object...)}.
+	 *
+	 * @return the format string.
+	 */
+	protected def getFormatSpecification : String {
+		return DEFAULT_FORMAT
+	}
+
+	synchronized def format(record : LogRecord) : String {
+		this.dat.time = record.millis
+		var source : String
+		if (record.sourceClassName !== null) {
+			source = record.sourceClassName
+			if (record.sourceMethodName !== null) {
+				source += " " + record.sourceMethodName
+			}
+		} else {
+			source = record.loggerName
+		}
+		var message = record.formatMessage
+		var throwable = ""
+		if (record.thrown !== null) {
+			try (var sw = new StringWriter) {
+				try (var pw = new PrintWriter(sw)) {
+					pw.println
+					record.thrown.printStackTrace(pw)
+				}
+				throwable = sw.toString
+			}
+		}
+		var ts = getTimeService
+		return String::format(
+			getFormatSpecification,
+			this.dat,
+			source,
+			record.loggerName,
+			record.level.localizedName,
+			message,
+			throwable,
+			ts.getTime(ts.timePrecision))
+	}
+}

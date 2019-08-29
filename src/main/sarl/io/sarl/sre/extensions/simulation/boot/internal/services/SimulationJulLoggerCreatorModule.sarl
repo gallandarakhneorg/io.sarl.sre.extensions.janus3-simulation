@@ -1,0 +1,103 @@
+/*
+ * $Id$
+ *
+ * SARL is an general-purpose agent programming language.
+ * More details on http://www.sarl.io
+ *
+ * Copyright (C) 2014-2019 the original authors or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.sarl.sre.extensions.simulation.boot.internal.services
+
+import com.google.inject.AbstractModule
+import com.google.inject.Injector
+import com.google.inject.Module
+import com.google.inject.Provides
+import io.bootique.BQModule
+import io.bootique.BQModuleProvider
+import io.sarl.sre.boot.configs.subconfigs.BootConfig
+import io.sarl.sre.boot.internal.services.LoggerCreatorModule
+import io.sarl.sre.extensions.simulation.services.logging.SimulationJulLoggerCreator
+import io.sarl.sre.services.logging.JulLoggerCreator
+import java.util.Collection
+import java.util.logging.Logger
+import javax.inject.Provider
+import javax.inject.Singleton
+import org.arakhne.afc.bootique.log4j.configs.Log4jIntegrationConfig
+
+import static extension java.util.Collections.*
+import io.sarl.sre.services.time.TimeService
+
+/** 
+ * Module for the logger creator that is dedicated to simulation.
+ * 
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ * @since 0.10
+ */
+class SimulationJulLoggerCreatorModule extends AbstractModule {
+
+	protected override configure {
+		//
+	}
+
+	/** 
+	 * Replies the creator of loggers.
+	 * 
+	 * @param loggingFactory accessor to the logging bootique factory.
+	 * @param bootFactory accessor to the boot bootique factory.
+	 * @param injector the injector of the members.
+	 * @param loggerProvider the provider of JUL logger.
+	 * @param timeProvider the provider of time service.
+	 * @return the logger creator.
+	 */
+	@Provides
+	@Singleton
+	def provideLoggerCreator(loggingConfig : Log4jIntegrationConfig, bootFactory : BootConfig, injector : Injector,
+		loggerProvider : Provider<Logger>, timeProvider : Provider<TimeService>) : JulLoggerCreator {
+		var creator = new SimulationJulLoggerCreator(
+			loggingConfig.level.toJul,
+			bootFactory.programName, loggerProvider, timeProvider)
+		injector.injectMembers(creator)
+		return creator
+	}
+
+}
+
+/** Provider of the module for the logger creator that is dedicated to simulation.
+ * 
+ * @author $Author: sgalland$
+ * @version $FullVersion$
+ * @mavengroupid $GroupId$
+ * @mavenartifactid $ArtifactId$
+ * @since 0.10
+ */
+class SimulationJulLoggerCreatorModuleProvider implements BQModuleProvider {
+
+	override module : Module {
+		return new SimulationJulLoggerCreatorModule
+	}
+
+	override overrides : Collection<Class<? extends Module>> {
+		typeof(LoggerCreatorModule).singletonList
+	}
+
+	override moduleBuilder : BQModule.Builder {
+		return BQModule::builder(module).overrides(overrides).providerName(name).configs(configs).description(
+			Messages::SimulationJulLoggerCreatorModuleProvider_0);
+	}
+
+}

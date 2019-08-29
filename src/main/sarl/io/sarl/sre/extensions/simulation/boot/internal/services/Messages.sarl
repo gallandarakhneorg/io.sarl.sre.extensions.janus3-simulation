@@ -43,6 +43,7 @@ final class Messages extends NLS {
 	public static var SimulatedTimeServiceModuleProvider_0 : String
 	public static var SimulationLifecycleServiceModuleProvider_0 : String
 	public static var SynchronousExecutorServiceModuleProvider_0 : String
+	public static var SimulationJulLoggerCreatorModuleProvider_0 : String
 
 	private new {
 	}
