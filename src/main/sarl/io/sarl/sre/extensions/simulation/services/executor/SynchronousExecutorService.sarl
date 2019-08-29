@@ -24,7 +24,6 @@ import io.sarl.sre.services.PreReleasableService
 import io.sarl.sre.services.executor.AbstractExecutorService
 import io.sarl.sre.services.executor.SreCallable
 import io.sarl.sre.services.executor.SreRunnable
-import io.sarl.sre.services.time.TimeListener
 import io.sarl.sre.services.time.TimeService
 import java.util.Collection
 import java.util.Deque
@@ -50,7 +49,7 @@ import javax.inject.Singleton
  * @since 0.10
  */
 @Singleton
-class SynchronousExecutorService extends AbstractExecutorService implements PreReleasableService, TimeListener {
+class SynchronousExecutorService extends AbstractExecutorService implements PreReleasableService {
 
 	@Inject
 	var timeService : TimeService
@@ -526,12 +525,7 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 
 	}
 	
-	protected override onStart {
-		this.timeService.addTimeListener(this)
-	}
-
-	def onPreStop {
-		this.timeService.removeTimeListener(this)
+	override onPreStop {
 		shutdown
 	}
 
@@ -548,9 +542,11 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 		}
 	}
 
-	def timeChanged(service : TimeService) {
+	/** Run the schedule tasks.
+	 */
+	def runScheduledTasks {
 		syncBuffer
-		var currentTime = service.getTime(this.timeService.timePrecision) as long
+		var currentTime = this.timeService.getTime(this.timeService.timePrecision) as long
 		var scheduledTasks = getScheduledTasks(this.previousTime, currentTime)
 		this.previousTime = currentTime
 		for (task : scheduledTasks) {
@@ -561,13 +557,6 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 					task.call
 				}
 			}
-		}
-	}
-
-	def timeUnitChanged(service : TimeService) {
-		synchronized (this) {
-			this.scheduledTaskBuffer.clear
-			this.scheduledTasks.clear
 		}
 	}
 

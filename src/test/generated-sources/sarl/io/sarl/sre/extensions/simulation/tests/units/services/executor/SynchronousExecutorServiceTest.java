@@ -144,7 +144,7 @@ public class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<
       return Double.valueOf(t);
     };
     Mockito.<Double>when(Double.valueOf(this.timeService.getTime(ArgumentMatchers.<TimeUnit>any()))).thenAnswer(_function);
-    this.service.timeChanged(this.timeService);
+    this.service.runScheduledTasks();
   }
   
   @Override

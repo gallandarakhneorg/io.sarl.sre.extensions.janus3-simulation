@@ -32,6 +32,7 @@ import io.sarl.sre.services.executor.ExecutorService;
 import io.sarl.tests.api.AbstractSarlTest;
 import io.sarl.tests.api.Nullable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.logging.Logger;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.junit.Assert;
@@ -90,12 +91,18 @@ public class SynchronizedEventBusTest extends AbstractSarlTest {
   }
   
   @Test
-  public void asyncDispatch_standardEvent() {
+  public void asyncDispatch_standardEvent_noMoveTime() {
     Event event = AbstractSarlTest.<Event>mock(Event.class);
     Mockito.<Address>when(event.getSource()).thenReturn(AbstractSarlTest.<Address>mock(Address.class));
     this.eventBus.asyncDispatch(event, this.logger);
-    Iterable<Event> events = this.eventBus.getBufferedEvents();
+    List<Event> events = this.eventBus.getTimedEvents();
     Iterator<Event> iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getNotImmediatelyFirableEvents();
+    iterator = events.iterator();
     Assert.assertTrue(iterator.hasNext());
     Assert.assertSame(event, iterator.next());
     Assert.assertFalse(iterator.hasNext());
@@ -103,33 +110,133 @@ public class SynchronizedEventBusTest extends AbstractSarlTest {
   }
   
   @Test
-  public void asyncDispatch_timestampEvent() {
+  public void asyncDispatch_standardEvent_moveToTimeBefore() {
+    Event event = AbstractSarlTest.<Event>mock(Event.class);
+    Mockito.<Address>when(event.getSource()).thenReturn(AbstractSarlTest.<Address>mock(Address.class));
+    this.eventBus.moveToTime(1000.0);
+    this.eventBus.asyncDispatch(event, this.logger);
+    List<Event> events = this.eventBus.getTimedEvents();
+    Iterator<Event> iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getNotImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertTrue(iterator.hasNext());
+    Assert.assertSame(event, iterator.next());
+    Assert.assertFalse(iterator.hasNext());
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void asyncDispatch_standardEvent_moveToTimeAfter() {
+    Event event = AbstractSarlTest.<Event>mock(Event.class);
+    Mockito.<Address>when(event.getSource()).thenReturn(AbstractSarlTest.<Address>mock(Address.class));
+    this.eventBus.asyncDispatch(event, this.logger);
+    this.eventBus.moveToTime(1000.0);
+    List<Event> events = this.eventBus.getTimedEvents();
+    Iterator<Event> iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertTrue(iterator.hasNext());
+    Assert.assertSame(event, iterator.next());
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getNotImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void asyncDispatch_timestampEvent_noMoveToTime() {
     SynchronizedEventBusTest.TestEvent event = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123.456));
     this.eventBus.asyncDispatch(event, this.logger);
-    Iterable<Event> events = this.eventBus.getBufferedEvents();
+    List<Event> events = this.eventBus.getTimedEvents();
     Iterator<Event> iterator = events.iterator();
     Assert.assertTrue(iterator.hasNext());
     Assert.assertSame(event, iterator.next());
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getNotImmediatelyFirableEvents();
+    iterator = events.iterator();
     Assert.assertFalse(iterator.hasNext());
     Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
   }
   
   @Test
-  public void fireBufferedEventsOnBus_emptyBuffer() {
+  public void asyncDispatch_timestampEvent_moveToTimeBefore() {
+    SynchronizedEventBusTest.TestEvent event = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123.456));
+    this.eventBus.moveToTime(1000.0);
+    this.eventBus.asyncDispatch(event, this.logger);
+    List<Event> events = this.eventBus.getTimedEvents();
+    Iterator<Event> iterator = events.iterator();
+    Assert.assertTrue(iterator.hasNext());
+    Assert.assertSame(event, iterator.next());
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getNotImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void asyncDispatch_timestampEvent_moveToTimeAfter() {
+    SynchronizedEventBusTest.TestEvent event = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123.456));
+    this.eventBus.asyncDispatch(event, this.logger);
+    this.eventBus.moveToTime(1000.0);
+    List<Event> events = this.eventBus.getTimedEvents();
+    Iterator<Event> iterator = events.iterator();
+    Assert.assertTrue(iterator.hasNext());
+    Assert.assertSame(event, iterator.next());
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    events = this.eventBus.getNotImmediatelyFirableEvents();
+    iterator = events.iterator();
+    Assert.assertFalse(iterator.hasNext());
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void fireBufferedEventsOnBus_emptyBuffer_noMoveToTime() {
     this.eventBus.fireBufferedEventsOnBus(1000.0);
     Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
   }
   
   @Test
-  public void fireBufferedEventsOnBus_oneBufferedStandardEvent() {
+  public void fireBufferedEventsOnBus_emptyBuffer_moveToTime() {
+    this.eventBus.moveToTime(1000.0);
+    this.eventBus.fireBufferedEventsOnBus(1000.0);
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void fireBufferedEventsOnBus_oneBufferedStandardEvent_noMoveToTime() {
     Event event0 = AbstractSarlTest.<Event>mock(Event.class);
     this.eventBus.asyncDispatch(event0, this.logger);
+    this.eventBus.fireBufferedEventsOnBus(1000.0);
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void fireBufferedEventsOnBus_oneBufferedStandardEvent_moveToTime() {
+    Event event0 = AbstractSarlTest.<Event>mock(Event.class);
+    this.eventBus.asyncDispatch(event0, this.logger);
+    this.eventBus.moveToTime(1000.0);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
     Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.only()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
   }
   
   @Test
-  public void fireBufferedEventsOnBus_oneBufferedTimestampEvent0() {
+  public void fireBufferedEventsOnBus_oneBufferedTimestampEvent0_noMoveToTime() {
     SynchronizedEventBusTest.TestEvent event0 = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123.456));
     this.eventBus.asyncDispatch(event0, this.logger);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
@@ -137,7 +244,16 @@ public class SynchronizedEventBusTest extends AbstractSarlTest {
   }
   
   @Test
-  public void fireBufferedEventsOnBus_oneBufferedTimestampEvent1() {
+  public void fireBufferedEventsOnBus_oneBufferedTimestampEvent0_moveToTime() {
+    SynchronizedEventBusTest.TestEvent event0 = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123.456));
+    this.eventBus.asyncDispatch(event0, this.logger);
+    this.eventBus.moveToTime(1000.0);
+    this.eventBus.fireBufferedEventsOnBus(1000.0);
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.only()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void fireBufferedEventsOnBus_oneBufferedTimestampEvent1_noMoveToTime() {
     SynchronizedEventBusTest.TestEvent event0 = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123456.0));
     this.eventBus.asyncDispatch(event0, this.logger);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
@@ -145,11 +261,31 @@ public class SynchronizedEventBusTest extends AbstractSarlTest {
   }
   
   @Test
-  public void fireBufferedEventsOnBus_twoBufferedTimestampEvent0() {
+  public void fireBufferedEventsOnBus_oneBufferedTimestampEvent1_moveToTime() {
+    SynchronizedEventBusTest.TestEvent event0 = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123456.0));
+    this.eventBus.asyncDispatch(event0, this.logger);
+    this.eventBus.moveToTime(1000.0);
+    this.eventBus.fireBufferedEventsOnBus(1000.0);
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void fireBufferedEventsOnBus_twoBufferedTimestampEvent0_noMoveToTime() {
     SynchronizedEventBusTest.TestEvent event0 = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123.456));
     this.eventBus.asyncDispatch(event0, this.logger);
     Event event1 = AbstractSarlTest.<Event>mock(Event.class);
     this.eventBus.asyncDispatch(event1, this.logger);
+    this.eventBus.fireBufferedEventsOnBus(1000.0);
+    Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.times(1)).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
+  }
+  
+  @Test
+  public void fireBufferedEventsOnBus_twoBufferedTimestampEvent0_moveToTime() {
+    SynchronizedEventBusTest.TestEvent event0 = AbstractSarlTest.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123.456));
+    this.eventBus.asyncDispatch(event0, this.logger);
+    Event event1 = AbstractSarlTest.<Event>mock(Event.class);
+    this.eventBus.asyncDispatch(event1, this.logger);
+    this.eventBus.moveToTime(1000.0);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
     Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.times(2)).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class));
   }

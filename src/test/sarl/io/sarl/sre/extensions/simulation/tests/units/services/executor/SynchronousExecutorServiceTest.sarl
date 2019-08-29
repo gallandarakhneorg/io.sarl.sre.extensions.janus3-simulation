@@ -57,7 +57,7 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 			var t : double = tu.convert(newTime, TimeUnit::MILLISECONDS)
 			return t
 		]
-		this.service.timeChanged(this.timeService)
+		this.service.runScheduledTasks
 	}
 
 	override setUp {

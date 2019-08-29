@@ -66,14 +66,22 @@ class SynchronizedEventBusTest extends AbstractSarlTest {
 	}
 
 	@Test
-	def asyncDispatch_standardEvent : void {
+	def asyncDispatch_standardEvent_noMoveTime : void {
 		var ^event = typeof(Event).mock
 		when(^event.source).thenReturn(typeof(Address).mock)
 
 		this.eventBus.asyncDispatch(^event, this.logger)
 
-		var events = this.eventBus.bufferedEvents
+		var events = this.eventBus.timedEvents
 		var iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.immediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.notImmediatelyFirableEvents
+		iterator = events.iterator
 		iterator.hasNext.assertTrue
 		^event.assertSame(iterator.next)
 		iterator.hasNext.assertFalse
@@ -82,37 +90,159 @@ class SynchronizedEventBusTest extends AbstractSarlTest {
 	}
 
 	@Test
-	def asyncDispatch_timestampEvent : void {
+	def asyncDispatch_standardEvent_moveToTimeBefore : void {
+		var ^event = typeof(Event).mock
+		when(^event.source).thenReturn(typeof(Address).mock)
+
+		this.eventBus.moveToTime(1000.0)
+		this.eventBus.asyncDispatch(^event, this.logger)
+
+		var events = this.eventBus.timedEvents
+		var iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.immediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.notImmediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertTrue
+		^event.assertSame(iterator.next)
+		iterator.hasNext.assertFalse
+
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def asyncDispatch_standardEvent_moveToTimeAfter : void {
+		var ^event = typeof(Event).mock
+		when(^event.source).thenReturn(typeof(Address).mock)
+
+		this.eventBus.asyncDispatch(^event, this.logger)
+		this.eventBus.moveToTime(1000.0)
+
+		var events = this.eventBus.timedEvents
+		var iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.immediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertTrue
+		^event.assertSame(iterator.next)
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.notImmediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def asyncDispatch_timestampEvent_noMoveToTime : void {
 		var ^event = new TestEvent(123.456).spy
 
 		this.eventBus.asyncDispatch(^event, this.logger)
 
-		var events = this.eventBus.bufferedEvents
+		var events = this.eventBus.timedEvents
 		var iterator = events.iterator
 		iterator.hasNext.assertTrue
 		^event.assertSame(iterator.next)
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.immediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.notImmediatelyFirableEvents
+		iterator = events.iterator
 		iterator.hasNext.assertFalse
 
 		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
 	}
 
 	@Test
-	def fireBufferedEventsOnBus_emptyBuffer : void {
+	def asyncDispatch_timestampEvent_moveToTimeBefore : void {
+		var ^event = new TestEvent(123.456).spy
+
+		this.eventBus.moveToTime(1000.0)
+		this.eventBus.asyncDispatch(^event, this.logger)
+
+		var events = this.eventBus.timedEvents
+		var iterator = events.iterator
+		iterator.hasNext.assertTrue
+		^event.assertSame(iterator.next)
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.immediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.notImmediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def asyncDispatch_timestampEvent_moveToTimeAfter : void {
+		var ^event = new TestEvent(123.456).spy
+
+		this.eventBus.asyncDispatch(^event, this.logger)
+		this.eventBus.moveToTime(1000.0)
+
+		var events = this.eventBus.timedEvents
+		var iterator = events.iterator
+		iterator.hasNext.assertTrue
+		^event.assertSame(iterator.next)
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.immediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		events = this.eventBus.notImmediatelyFirableEvents
+		iterator = events.iterator
+		iterator.hasNext.assertFalse
+
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	@Test
+	def fireBufferedEventsOnBus_emptyBuffer_noMoveToTime : void {
 		this.eventBus.fireBufferedEventsOnBus(1000.0)
 		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
 	}
 
 	@Test
-	def fireBufferedEventsOnBus_oneBufferedStandardEvent : void {
+	def fireBufferedEventsOnBus_emptyBuffer_moveToTime : void {
+		this.eventBus.moveToTime(1000.0)
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+	
+	@Test
+	def fireBufferedEventsOnBus_oneBufferedStandardEvent_noMoveToTime : void {
 		var event0 = typeof(Event).mock
 		this.eventBus.asyncDispatch(event0, this.logger)
 
 		this.eventBus.fireBufferedEventsOnBus(1000.0)
-		this.dispatcher.verify(only).getBehaviorGuardEvaluators(typeof(Event).any)
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
 	}
 
 	@Test
-	def fireBufferedEventsOnBus_oneBufferedTimestampEvent0 : void {
+	def fireBufferedEventsOnBus_oneBufferedStandardEvent_moveToTime : void {
+		var event0 = typeof(Event).mock
+		this.eventBus.asyncDispatch(event0, this.logger)
+		this.eventBus.moveToTime(1000.0)
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(only).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+	
+	@Test
+	def fireBufferedEventsOnBus_oneBufferedTimestampEvent0_noMoveToTime : void {
 		var event0 = new TestEvent(123.456).spy
 		this.eventBus.asyncDispatch(event0, this.logger)
 
@@ -121,7 +251,17 @@ class SynchronizedEventBusTest extends AbstractSarlTest {
 	}
 
 	@Test
-	def fireBufferedEventsOnBus_oneBufferedTimestampEvent1 : void {
+	def fireBufferedEventsOnBus_oneBufferedTimestampEvent0_moveToTime : void {
+		var event0 = new TestEvent(123.456).spy
+		this.eventBus.asyncDispatch(event0, this.logger)
+		this.eventBus.moveToTime(1000.0)
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(only).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+
+	
+	@Test
+	def fireBufferedEventsOnBus_oneBufferedTimestampEvent1_noMoveToTime : void {
 		var event0 = new TestEvent(123456.0).spy
 		this.eventBus.asyncDispatch(event0, this.logger)
 
@@ -130,17 +270,36 @@ class SynchronizedEventBusTest extends AbstractSarlTest {
 	}
 
 	@Test
-	def fireBufferedEventsOnBus_twoBufferedTimestampEvent0 : void {
+	def fireBufferedEventsOnBus_oneBufferedTimestampEvent1_moveToTime : void {
+		var event0 = new TestEvent(123456.0).spy
+		this.eventBus.asyncDispatch(event0, this.logger)
+		this.eventBus.moveToTime(1000.0)
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(never).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
+	
+	@Test
+	def fireBufferedEventsOnBus_twoBufferedTimestampEvent0_noMoveToTime : void {
 		var event0 = new TestEvent(123.456).spy
 		this.eventBus.asyncDispatch(event0, this.logger)
 		var event1 = typeof(Event).mock
 		this.eventBus.asyncDispatch(event1, this.logger)
+		this.eventBus.fireBufferedEventsOnBus(1000.0)
+		this.dispatcher.verify(1.times).getBehaviorGuardEvaluators(typeof(Event).any)
+	}
 
+	@Test
+	def fireBufferedEventsOnBus_twoBufferedTimestampEvent0_moveToTime : void {
+		var event0 = new TestEvent(123.456).spy
+		this.eventBus.asyncDispatch(event0, this.logger)
+		var event1 = typeof(Event).mock
+		this.eventBus.asyncDispatch(event1, this.logger)
+		this.eventBus.moveToTime(1000.0)
 		this.eventBus.fireBufferedEventsOnBus(1000.0)
 		this.dispatcher.verify(2.times).getBehaviorGuardEvaluators(typeof(Event).any)
 	}
 
-	/**
+	/** 
 	 * @author $Author: sgalland$
 	 * @version $FullVersion$
 	 * @mavengroupid $GroupId$

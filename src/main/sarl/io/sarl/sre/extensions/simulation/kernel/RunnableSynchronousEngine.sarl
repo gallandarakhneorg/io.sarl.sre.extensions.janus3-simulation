@@ -37,6 +37,8 @@ import static java.lang.Thread.*
 
 import static extension io.sarl.sre.services.lifecycle.AgentLife.*
 import org.eclipse.xtend.lib.annotations.Accessors
+import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorService
+import io.sarl.sre.services.executor.ExecutorService
 
 /**
  * Execution engine that imposes synchronous execution of the agents for a single simulation step.
@@ -64,6 +66,9 @@ class RunnableSynchronousEngine implements Runnable {
 
 	@Accessors(PROTECTED_GETTER)
 	var loggingService : LoggingService
+
+	@Accessors(PROTECTED_GETTER)
+	var executorService : SynchronousExecutorService
 
 	@Accessors(PROTECTED_GETTER)
 	var externalController : SynchronousEngineExternalController
@@ -102,6 +107,11 @@ class RunnableSynchronousEngine implements Runnable {
 		this.loggingService = logger
 	}
 
+	@Inject
+	def setExecutorService(executorService : ExecutorService) {
+		this.executorService = executorService as SynchronousExecutorService
+	}
+	
 	/** Run one step of the simulation loop.
 	 */
 	@SuppressWarnings("discouraged_reference")
@@ -187,15 +197,27 @@ class RunnableSynchronousEngine implements Runnable {
 	protected def runAgents(agents : Iterable<Agent>) {
 		assert agents !== null
 		val untilTime = this.timeManager.getTime(this.timeConfiguration.unit)
+		// General pre-running stage
 		agents.preRunAgents(untilTime)
+		// Notify agents about the time change
 		var agentIterator = this.agentScheduler.schedule(agents)
+		while (agentIterator.hasNext) {
+			agentIterator.next.preRunSingleAgent(untilTime)
+		}
+		// Run the scheduled tasks
+		this.executorService.runScheduledTasks
+		// Run the behaviors
+		agentIterator = this.agentScheduler.schedule(agents)
 		while (agentIterator.hasNext) {
 			agentIterator.next.runSingleAgent(untilTime)
 		}
+		// General post-running stage
 		agents.postRunAgents(untilTime)
 	}
 
 	/** Called before running the agents.
+	 * This function is called before {@link #preRunSingleAgent(Agent, double)} and
+	 * {@link #runSingleAgent(Agent, double)}.
 	 * 
 	 * @param agents the agents to run.
 	 * @param untilTime the time to which (included) all the events must be fired.
@@ -205,7 +227,9 @@ class RunnableSynchronousEngine implements Runnable {
 	}
 
 	/** Called after running the agents.
-	 *
+	 * This function is called after {@link #preRunSingleAgent(Agent, double)} and
+	 * {@link #runSingleAgent(Agent, double)}.
+	 * 
 	 * @param agents the agents to run.
 	 * @param untilTime the time to which (included) all the events must be fired.
 	 */
@@ -213,6 +237,20 @@ class RunnableSynchronousEngine implements Runnable {
 		//
 	}
 
+	/** Pre-run one agent.
+	 * 
+	 * @param agent the agent to run.
+	 * @param untilTime the time to which (included) all the events must be fired.
+	 */
+	@SuppressWarnings("use_reserved_sarl_annotation")
+	@PrivateAPI(isCallerOnly = true)
+	protected def preRunSingleAgent(^agent : Agent, untilTime : double) : void {
+		var ^capacity = ^agent.life.eventBus
+		assert ^capacity !== null
+		val bus = ^capacity.getEventBus(typeof(SynchronizedEventBus))
+		assert bus !== null
+		bus.moveToTime(untilTime)
+	}
 	
 	/** Run one agent.
 	 * 
