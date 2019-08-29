@@ -21,15 +21,15 @@
 package io.sarl.sre.extensions.simulation.services.lifecycle
 
 import io.sarl.lang.core.Agent
-import io.sarl.sre.services.lifecycle.InjectionBasedLifecycleService
-import java.util.UUID
-import javax.inject.Singleton
-import java.util.List
 import io.sarl.sre.services.context.Context
+import io.sarl.sre.services.lifecycle.InjectionBasedLifecycleService
 import io.sarl.sre.services.lifecycle.SpawnResult
 import java.util.ArrayList
 import java.util.Collections
+import java.util.List
+import java.util.UUID
 import java.util.logging.Level
+import javax.inject.Singleton
 
 /**
  * Lifecycle service based on simulation.
@@ -74,7 +74,7 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 
 	synchronized override killAgent(^agent : Agent) : boolean {
 		assert ^agent !== null
-		if (^agent.isKillableAgent) {
+		if (^agent.isKillableAgent) { 
 			if (this.agentsToRemove === null) {
 				this.agentsToRemove = newLinkedList
 			}
@@ -124,12 +124,12 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 		}
 	}
 
-	/** Replies if an agents is running.
+	/** Replies if at least one agent is running.
 	 *
 	 * @return {@code true} if an agent is running. Otherwise {@code false}.
 	 */
 	def synchronized hasAgent : boolean {
-		!this.agents.empty
+		!this.agents.empty || (this.agentsToAdd !== null && !this.agentsToAdd.empty)
 	}
 
 	/** Replies the running agents.
@@ -138,6 +138,11 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 	 */
 	def getAgents : Iterable<Agent> {
 		Collections::unmodifiableCollection(this.agents.values)
+	}
+
+	protected override isEmptyRootContext(context : Context) : boolean {
+		super.isEmptyRootContext(context)
+		&& (this.agentsToAdd === null || this.agentsToAdd.empty)
 	}
 
 	/** Replies the agent with the identifier.
@@ -173,6 +178,10 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 			this.agentId = agentId
 			this.agentClazz = agentClazz
 			this.params = params
+		}
+
+		override toString : String {
+			return this.agentClazz.name
 		}
 
 	}

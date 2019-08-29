@@ -39,6 +39,7 @@ import org.mockito.ArgumentCaptor
 
 import static extension org.mockito.ArgumentMatchers.*
 import static extension org.mockito.Mockito.*
+import io.sarl.sre.services.executor.SreKernelRunnable
 
 /**
  * @author $Author: sgalland$
@@ -119,16 +120,19 @@ class SimulationKernelTest extends AbstractSarlTest {
 	}
 
 	@Test
-	def startKernelThread : void {
-		this.kernel.startKernelThread(this.executorService)
+	def startKernelAsync : void {
+		this.kernel.startKernelAsync(this.executorService)
 		var arg = ArgumentCaptor::forClass(typeof(Runnable))
 		this.executorService.verify(1.times).execute(arg.capture)
-		this.kernel.assertSame(arg.value)
+		var executedTask = arg.value
+		assertInstanceOf(typeof(SreKernelRunnable), executedTask)
+		this.engine.assertSame((executedTask as SreKernelRunnable).source)
 	}
 
 	@Test
-	def run : void {
-		this.kernel.run
+	def startKernelSync : void {
+		this.kernel.startKernelSync()
+		var arg = ArgumentCaptor::forClass(typeof(Runnable))
 		this.engine.verify(1.times).run
 	}
 

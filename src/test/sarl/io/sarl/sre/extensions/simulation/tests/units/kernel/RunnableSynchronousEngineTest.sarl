@@ -19,12 +19,12 @@
  * limitations under the License.
  */
 
-package io.sarl.sre.extensions.simulation.tests.units.engine
+package io.sarl.sre.extensions.simulation.tests.units.kernel
 
 import io.sarl.lang.core.Agent
 import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig
-import io.sarl.sre.extensions.simulation.engine.AgentScheduler
-import io.sarl.sre.extensions.simulation.engine.RunnableSynchronousEngine
+import io.sarl.sre.extensions.simulation.kernel.RunnableSynchronousEngine
+import io.sarl.sre.extensions.simulation.schedule.AgentScheduler
 import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
 import io.sarl.sre.services.time.TimeService
 import io.sarl.sre.tests.testutils.mockito.NativeDoubleArgumentCaptor
@@ -37,6 +37,9 @@ import org.junit.Test
 
 import static extension org.mockito.ArgumentMatchers.*
 import static extension org.mockito.Mockito.*
+import io.sarl.sre.services.logging.LoggingService
+import java.util.logging.Logger
+import io.sarl.sre.extensions.simulation.kernel.SynchronousEngineExternalController
 
 /**
  * @author $Author: sgalland$
@@ -61,6 +64,12 @@ class RunnableSynchronousEngineTest extends AbstractSarlTest {
 
 	@Nullable
 	var timeService : TimeService
+
+	@Nullable
+	var loggingService : LoggingService
+
+	@Nullable
+	var externalController : SynchronousEngineExternalController
 
 	@Nullable
 	var agents : Iterable<Agent>
@@ -88,11 +97,21 @@ class RunnableSynchronousEngineTest extends AbstractSarlTest {
 
 		this.timeService = typeof(TimeService).mock
 
+		var logger = typeof(Logger).mock
+		this.loggingService = typeof(LoggingService).mock
+		when(this.loggingService.kernelLogger).thenReturn(logger)
+
+		this.externalController = typeof(SynchronousEngineExternalController).mock
+		when(this.externalController.isRunning).thenReturn(true)
+		when(this.externalController.isStopped).thenReturn(false)
+
 		this.engine = new RunnableSynchronousEngine
 		this.engine.timeConfiguration = this.timeConfig
 		this.engine.lifecycleService = this.lifecycleService
 		this.engine.timeManager = this.timeService
 		this.engine.agentScheduler = this.agentScheduler
+		this.engine.loggingService = this.loggingService
+		this.engine.externalController = this.externalController
 	}
 
 	protected def applyDelay {

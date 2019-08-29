@@ -41,6 +41,7 @@ final class Messages extends NLS {
 	}
 
 	public static var SimulationKernelModuleProvider_0 : String
+	public static var RunnableSynchronousEngineModuleProvider_0 : String
 
 	private new {
 	}

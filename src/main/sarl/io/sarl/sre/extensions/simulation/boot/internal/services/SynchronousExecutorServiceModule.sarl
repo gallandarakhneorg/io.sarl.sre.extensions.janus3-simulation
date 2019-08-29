@@ -24,9 +24,13 @@ import com.google.inject.AbstractModule
 import com.google.inject.Module
 import io.bootique.BQModule
 import io.bootique.BQModuleProvider
+import io.sarl.sre.boot.internal.services.ExecutorServiceModule
 import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorService
 import io.sarl.sre.services.executor.ExecutorService
+import java.util.Collection
 import javax.inject.Singleton
+
+import static extension java.util.Collections.*
 
 /** 
  * Module for the simulation execution services.
@@ -58,6 +62,10 @@ class SynchronousExecutorServiceModuleProvider implements BQModuleProvider {
 
 	override module : Module {
 		return new SynchronousExecutorServiceModule
+	}
+
+	override overrides : Collection<Class<? extends Module>> {
+		typeof(ExecutorServiceModule).singletonList
 	}
 
 	override moduleBuilder : BQModule.Builder {

@@ -18,13 +18,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sarl.sre.extensions.simulation.engine
+package io.sarl.sre.extensions.simulation.kernel
 
 import com.google.inject.Inject
 import io.sarl.lang.annotation.PrivateAPI
 import io.sarl.lang.core.Agent
 import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
 import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig
+import io.sarl.sre.extensions.simulation.schedule.AgentScheduler
+import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
 import io.sarl.sre.extensions.simulation.skills.SynchronizedEventBus
 import io.sarl.sre.services.lifecycle.LifecycleService
 import io.sarl.sre.services.logging.LoggingService
@@ -34,7 +36,7 @@ import java.util.logging.Level
 import static java.lang.Thread.*
 
 import static extension io.sarl.sre.services.lifecycle.AgentLife.*
-import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
+import org.eclipse.xtend.lib.annotations.Accessors
 
 /**
  * Execution engine that imposes synchronous execution of the agents for a single simulation step.
@@ -51,17 +53,29 @@ class RunnableSynchronousEngine implements Runnable {
 
 	var timeConfiguration : TimeConfig
 
+	@Accessors(PROTECTED_GETTER)
 	var timeManager : TimeService
 
-	var lifecycle : SimulationLifecycleService
+	@Accessors(PROTECTED_GETTER)
+	var lifecycleService : SimulationLifecycleService
 
-	var scheduler : AgentScheduler
+	@Accessors(PROTECTED_GETTER)
+	var agentScheduler : AgentScheduler
 
-	var logger : LoggingService
+	@Accessors(PROTECTED_GETTER)
+	var loggingService : LoggingService
+
+	@Accessors(PROTECTED_GETTER)
+	var externalController : SynchronousEngineExternalController
+
+	@Inject
+	def setExternalController(controller : SynchronousEngineExternalController) {
+		this.externalController = controller
+	}
 
 	@Inject
 	def setAgentScheduler(scheduler : AgentScheduler) {
-		this.scheduler = scheduler
+		this.agentScheduler = scheduler
 	}
 
 	@Inject
@@ -80,12 +94,12 @@ class RunnableSynchronousEngine implements Runnable {
 
 	@Inject
 	def setLifecycleService(lifecycleService : LifecycleService) {
-		this.lifecycle = lifecycleService as SimulationLifecycleService
+		this.lifecycleService = lifecycleService as SimulationLifecycleService
 	}
 
 	@Inject
 	def setLoggingService(logger : LoggingService) {
-		this.logger = logger
+		this.loggingService = logger
 	}
 
 	/** Run one step of the simulation loop.
@@ -95,16 +109,22 @@ class RunnableSynchronousEngine implements Runnable {
 		this.timeManager.timeIfPossible = this.timeConfiguration.startTime
 		val delay = this.timeConfiguration.simulationLoopDelay
 		waitForAgentRegistration
-		if (delay <= 0) {
-			do {
-				runOneSimulationStep
-				yield
-			} while (this.lifecycle.hasAgent)
-		} else {
-			do {
-				runOneSimulationStep
-				sleep(delay)
-			} while (this.lifecycle.hasAgent)
+		if (!this.externalController.stopped) {
+			if (delay <= 0) {
+				do {
+					if (this.externalController.running) {
+						runOneSimulationStep
+						yield
+					}
+				} while (!this.externalController.stopped && this.lifecycleService.hasAgent)
+			} else {
+				do {
+					if (this.externalController.running) {
+						runOneSimulationStep
+						sleep(delay)
+					}
+				} while (!this.externalController.stopped && this.lifecycleService.hasAgent)
+			}
 		}
 	}
 
@@ -113,9 +133,13 @@ class RunnableSynchronousEngine implements Runnable {
 	 */
 	@SuppressWarnings("discouraged_reference")
 	protected def waitForAgentRegistration {
-		while (!this.lifecycle.hasAgent) {
-			this.lifecycle.synchronizeAgentList
+		this.loggingService.kernelLogger.log(Level::FINE, Messages::RunnableSynchronousEngine_0)
+		while (!this.externalController.stopped && !this.lifecycleService.hasAgent) {
+			this.lifecycleService.synchronizeAgentList
 			yield
+		}
+		if (!this.externalController.stopped) {
+			this.loggingService.kernelLogger.log(Level::FINE, Messages::RunnableSynchronousEngine_1)
 		}
 	}
 
@@ -125,19 +149,19 @@ class RunnableSynchronousEngine implements Runnable {
 	 */
 	protected def runOneSimulationStep {
 		try {
-			this.lifecycle.agents.runAgents
+			this.lifecycleService.agents.runAgents
 		} catch (e : Throwable) {
-			this.logger.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
+			this.loggingService.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
 		}
 		try {
-			this.lifecycle.synchronizeAgentList
+			this.lifecycleService.synchronizeAgentList
 		} catch (e : Throwable) {
-			this.logger.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
+			this.loggingService.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
 		}
 		try {
 			this.timeManager.evolveTimeIfPossible(this.timeEvolution)
 		} catch (e : Throwable) {
-			this.logger.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
+			this.loggingService.kernelLogger.log(Level::SEVERE, e.localizedMessage, e)
 		}
 	}
 
@@ -162,27 +186,30 @@ class RunnableSynchronousEngine implements Runnable {
 	 */
 	protected def runAgents(agents : Iterable<Agent>) {
 		assert agents !== null
-		agents.preRunAgents
-		var agentIterator = this.scheduler.schedule(agents)
+		val untilTime = this.timeManager.getTime(this.timeConfiguration.unit)
+		agents.preRunAgents(untilTime)
+		var agentIterator = this.agentScheduler.schedule(agents)
 		while (agentIterator.hasNext) {
-			agentIterator.next.runSingleAgent
+			agentIterator.next.runSingleAgent(untilTime)
 		}
-		agents.postRunAgents
+		agents.postRunAgents(untilTime)
 	}
 
 	/** Called before running the agents.
 	 * 
 	 * @param agents the agents to run.
+	 * @param untilTime the time to which (included) all the events must be fired.
 	 */
-	protected def preRunAgents(agents : Iterable<Agent>) {
+	protected def preRunAgents(agents : Iterable<Agent>, untilTime : double) {
 		//
 	}
 
 	/** Called after running the agents.
 	 *
 	 * @param agents the agents to run.
+	 * @param untilTime the time to which (included) all the events must be fired.
 	 */
-	protected def postRunAgents(agents : Iterable<Agent>) {
+	protected def postRunAgents(agents : Iterable<Agent>, untilTime : double) {
 		//
 	}
 
@@ -190,15 +217,16 @@ class RunnableSynchronousEngine implements Runnable {
 	/** Run one agent.
 	 * 
 	 * @param agent the agent to run.
+	 * @param untilTime the time to which (included) all the events must be fired.
 	 */
 	@SuppressWarnings("use_reserved_sarl_annotation")
 	@PrivateAPI(isCallerOnly = true)
-	protected def runSingleAgent(^agent : Agent) : void {
+	protected def runSingleAgent(^agent : Agent, untilTime : double) : void {
 		var ^capacity = ^agent.life.eventBus
 		assert ^capacity !== null
 		val bus = ^capacity.getEventBus(typeof(SynchronizedEventBus))
 		assert bus !== null
-		bus.fireBufferedEventsOnBus(this.timeManager.getTime(this.timeConfiguration.unit))
+		bus.fireBufferedEventsOnBus(untilTime)
 	}
 
 }

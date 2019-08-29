@@ -30,6 +30,7 @@ import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig;
 import io.sarl.sre.extensions.simulation.kernel.SimulationKernel;
 import io.sarl.sre.services.IServiceManager;
 import io.sarl.sre.services.context.ContextService;
+import io.sarl.sre.services.executor.SreKernelRunnable;
 import io.sarl.sre.services.lifecycle.LifecycleService;
 import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.tests.api.AbstractSarlTest;
@@ -124,16 +125,19 @@ public class SimulationKernelTest extends AbstractSarlTest {
   }
   
   @Test
-  public void startKernelThread() {
-    this.kernel.startKernelThread(this.executorService);
+  public void startKernelAsync() {
+    this.kernel.startKernelAsync(this.executorService);
     ArgumentCaptor<Runnable> arg = ArgumentCaptor.<Runnable, Runnable>forClass(Runnable.class);
     Mockito.<ExecutorService>verify(this.executorService, Mockito.times(1)).execute(arg.capture());
-    Assert.assertSame(this.kernel, arg.getValue());
+    Runnable executedTask = arg.getValue();
+    AbstractSarlTest.assertInstanceOf(SreKernelRunnable.class, executedTask);
+    Assert.assertSame(this.engine, ((SreKernelRunnable) executedTask).getSource());
   }
   
   @Test
-  public void run() {
-    this.kernel.run();
+  public void startKernelSync() {
+    this.kernel.startKernelSync();
+    ArgumentCaptor<Runnable> arg = ArgumentCaptor.<Runnable, Runnable>forClass(Runnable.class);
     Mockito.<Runnable>verify(this.engine, Mockito.times(1)).run();
   }
   

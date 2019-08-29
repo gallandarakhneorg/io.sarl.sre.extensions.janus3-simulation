@@ -18,21 +18,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sarl.sre.extensions.simulation.tests.units.engine;
+package io.sarl.sre.extensions.simulation.tests.units.kernel;
 
 import io.sarl.lang.annotation.SarlElementType;
 import io.sarl.lang.annotation.SarlSpecification;
 import io.sarl.lang.annotation.SyntheticMember;
 import io.sarl.lang.core.Agent;
 import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig;
-import io.sarl.sre.extensions.simulation.engine.AgentScheduler;
-import io.sarl.sre.extensions.simulation.engine.RunnableSynchronousEngine;
+import io.sarl.sre.extensions.simulation.kernel.RunnableSynchronousEngine;
+import io.sarl.sre.extensions.simulation.kernel.SynchronousEngineExternalController;
+import io.sarl.sre.extensions.simulation.schedule.AgentScheduler;
 import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService;
+import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.sre.services.time.TimeService;
 import io.sarl.sre.tests.testutils.mockito.NativeDoubleArgumentCaptor;
 import io.sarl.tests.api.AbstractSarlTest;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
 import org.eclipse.xtext.util.internal.Nullable;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.junit.Before;
@@ -69,6 +72,12 @@ public class RunnableSynchronousEngineTest extends AbstractSarlTest {
   private TimeService timeService;
   
   @Nullable
+  private LoggingService loggingService;
+  
+  @Nullable
+  private SynchronousEngineExternalController externalController;
+  
+  @Nullable
   private Iterable<Agent> agents;
   
   @Before
@@ -94,12 +103,20 @@ public class RunnableSynchronousEngineTest extends AbstractSarlTest {
     Mockito.<Boolean>when(Boolean.valueOf(this.lifecycleService.hasAgent())).thenAnswer(_function_1);
     Mockito.<Iterable<Agent>>when(this.lifecycleService.getAgents()).thenReturn(this.agents);
     this.timeService = AbstractSarlTest.<TimeService>mock(TimeService.class);
+    Logger logger = AbstractSarlTest.<Logger>mock(Logger.class);
+    this.loggingService = AbstractSarlTest.<LoggingService>mock(LoggingService.class);
+    Mockito.<Logger>when(this.loggingService.getKernelLogger()).thenReturn(logger);
+    this.externalController = AbstractSarlTest.<SynchronousEngineExternalController>mock(SynchronousEngineExternalController.class);
+    Mockito.<Boolean>when(Boolean.valueOf(this.externalController.isRunning())).thenReturn(Boolean.valueOf(true));
+    Mockito.<Boolean>when(Boolean.valueOf(this.externalController.isStopped())).thenReturn(Boolean.valueOf(false));
     RunnableSynchronousEngine _runnableSynchronousEngine = new RunnableSynchronousEngine();
     this.engine = _runnableSynchronousEngine;
     this.engine.setTimeConfiguration(this.timeConfig);
     this.engine.setLifecycleService(this.lifecycleService);
     this.engine.setTimeManager(this.timeService);
     this.engine.setAgentScheduler(this.agentScheduler);
+    this.engine.setLoggingService(this.loggingService);
+    this.engine.setExternalController(this.externalController);
   }
   
   protected OngoingStubbing<Long> applyDelay() {

@@ -28,6 +28,10 @@ import io.bootique.BQModuleProvider
 import com.google.inject.Module
 import io.bootique.BQModule
 
+import static extension java.util.Collections.*
+import java.util.Collection
+import io.sarl.sre.boot.internal.kernel.KernelModule
+
 /** 
  * Module configures the simulation kernel .
  * 
@@ -59,6 +63,10 @@ class SimulationKernelModuleProvider implements BQModuleProvider {
 		return new SimulationKernelModule
 	}
 
+	override overrides : Collection<Class<? extends Module>> {
+		typeof(KernelModule).singletonList
+	}
+	
 	override moduleBuilder : BQModule.Builder {
 		return BQModule::builder(module).overrides(overrides).providerName(name).configs(configs).description(
 			Messages::SimulationKernelModuleProvider_0);

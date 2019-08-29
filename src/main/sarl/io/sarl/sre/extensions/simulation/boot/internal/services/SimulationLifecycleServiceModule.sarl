@@ -21,12 +21,16 @@
 package io.sarl.sre.extensions.simulation.boot.internal.services
 
 import com.google.inject.AbstractModule
-import io.sarl.sre.services.lifecycle.LifecycleService
-import javax.inject.Singleton
-import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
-import io.bootique.BQModuleProvider
 import com.google.inject.Module
 import io.bootique.BQModule
+import io.bootique.BQModuleProvider
+import io.sarl.sre.boot.internal.services.LifecycleServiceModule
+import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
+import io.sarl.sre.services.lifecycle.LifecycleService
+import java.util.Collection
+import javax.inject.Singleton
+
+import static extension java.util.Collections.*
 
 /** 
  * Module for the simulation lifecycle services.
@@ -58,6 +62,10 @@ class SimulationLifecycleServiceModuleProvider implements BQModuleProvider {
 
 	override module : Module {
 		return new SimulationLifecycleServiceModule
+	}
+
+	override overrides : Collection<Class<? extends Module>> {
+		typeof(LifecycleServiceModule).singletonList
 	}
 
 	override moduleBuilder : BQModule.Builder {

@@ -21,12 +21,16 @@
 package io.sarl.sre.extensions.simulation.boot.internal.services
 
 import com.google.inject.AbstractModule
-import io.sarl.sre.services.time.TimeService
-import javax.inject.Singleton
-import io.sarl.sre.extensions.simulation.services.time.SimulatedTimeService
-import io.bootique.BQModuleProvider
 import com.google.inject.Module
 import io.bootique.BQModule
+import io.bootique.BQModuleProvider
+import io.sarl.sre.boot.internal.services.TimeServiceModule
+import io.sarl.sre.extensions.simulation.services.time.SimulatedTimeService
+import io.sarl.sre.services.time.TimeService
+import java.util.Collection
+import javax.inject.Singleton
+
+import static extension java.util.Collections.*
 
 /** 
  * Module for the time services that are based on the simulation time.
@@ -53,10 +57,14 @@ class SimulatedTimeServiceModule extends AbstractModule {
  * @mavenartifactid $ArtifactId$
  * @since 0.10
  */
-class SimulatedTimeModuleProvider implements BQModuleProvider {
+class SimulatedTimeServiceModuleProvider implements BQModuleProvider {
 
 	override module : Module {
 		return new SimulatedTimeServiceModule
+	}
+
+	override overrides : Collection<Class<? extends Module>> {
+		typeof(TimeServiceModule).singletonList
 	}
 
 	override moduleBuilder : BQModule.Builder {

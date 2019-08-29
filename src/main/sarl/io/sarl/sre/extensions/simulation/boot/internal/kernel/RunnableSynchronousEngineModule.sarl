@@ -18,17 +18,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sarl.sre.extensions.simulation.boot.internal.engine
+package io.sarl.sre.extensions.simulation.boot.internal.kernel
 
 import com.google.inject.AbstractModule
 import com.google.inject.Injector
-import com.google.inject.Provides
-import javax.inject.Singleton
-import io.sarl.sre.extensions.simulation.engine.SynchronousEngine
-import io.sarl.sre.extensions.simulation.engine.RunnableSynchronousEngine
-import io.bootique.BQModuleProvider
 import com.google.inject.Module
+import com.google.inject.Provides
 import io.bootique.BQModule
+import io.bootique.BQModuleProvider
+import io.sarl.sre.extensions.simulation.kernel.RunnableSynchronousEngine
+import io.sarl.sre.extensions.simulation.kernel.SynchronousEngine
+import javax.inject.Singleton
 
 /** 
  * Module for the synchronous engine.
@@ -39,7 +39,7 @@ import io.bootique.BQModule
  * @mavenartifactid $ArtifactId$
  * @since 0.10
  */
-class EngineModule extends AbstractModule {
+class RunnableSynchronousEngineModule extends AbstractModule {
 
 	protected override configure {
 		//
@@ -64,15 +64,15 @@ class EngineModule extends AbstractModule {
  * @mavenartifactid $ArtifactId$
  * @since 0.10
  */
-class EngineModuleProvider implements BQModuleProvider {
+class RunnableSynchronousEngineModuleProvider implements BQModuleProvider {
 
 	override module : Module {
-		return new EngineModule
+		return new RunnableSynchronousEngineModule
 	}
 
 	override moduleBuilder : BQModule.Builder {
 		return BQModule::builder(module).overrides(overrides).providerName(name).configs(configs).description(
-			Messages::EngineModuleProvider_0);
+			Messages::RunnableSynchronousEngineModuleProvider_0);
 	}
 
 }

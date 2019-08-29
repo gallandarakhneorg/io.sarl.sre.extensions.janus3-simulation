@@ -23,12 +23,13 @@ package io.sarl.sre.extensions.simulation.kernel
 import com.google.inject.Inject
 import io.bootique.config.ConfigurationFactory
 import io.sarl.sre.Kernel
+import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
 import io.sarl.sre.services.IServiceManager
 import java.lang.Thread.UncaughtExceptionHandler
 import java.util.concurrent.ExecutorService
 import javax.inject.Singleton
-import io.sarl.sre.extensions.simulation.engine.SynchronousEngine
-import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
+
+import static extension io.sarl.sre.services.executor.Runnables.*
 
 /** 
  * This class represents the Kernel of the SRE simulation platform.
@@ -45,7 +46,7 @@ import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
  * @since 0.10
  */
 @Singleton
-class SimulationKernel extends Kernel implements Runnable {
+class SimulationKernel extends Kernel {
 	
 	val synchronousEngine : Runnable
 
@@ -60,22 +61,30 @@ class SimulationKernel extends Kernel implements Runnable {
 
 		assert engine !== null
 		this.synchronousEngine = engine
-		var cfg = SimulationConfig.getConfiguration(configFactory)
+		var cfg = SimulationConfig::getConfiguration(configFactory)
 		if (cfg.autostart) {
-			executorService.startKernelThread
+			startKernelAsync(executorService)
 		}
+	}
+
+	/** Replies the synchronous engine.
+	 */
+	def getSynchronousEngine : Runnable {
+		this.synchronousEngine
 	}
 
 	/** Start the kernel thread with the given executor service.
 	 *
 	 * @param executorService the service that could be used for starting the kernel thread.
 	 */
-	def startKernelThread(executorService : ExecutorService) {
-		executorService.execute(this)
+	def startKernelAsync(executorService : ExecutorService) {
+		executorService.execute(getSynchronousEngine.named("Simulation Kernel"))
 	}
 
-	override run {
-		this.synchronousEngine.run
+	/** Start the kernel inside the current thread.
+	 */
+	def startKernelSync {
+		getSynchronousEngine.named("Simulation Kernel").run
 	}
 
 }

@@ -53,7 +53,7 @@ class SimulationConfig {
 	public static val PREFIX = "simulation"
 
 	/** 
-	 * Name of the property that indicates if the kernel's thread is automatically started when the kernel
+	 * Name of the property that indicates if the kernel is automatically started when the kernel
 	 * is created.
 	 * 
 	 * @see #AUTOSTART_VALUE
@@ -61,12 +61,26 @@ class SimulationConfig {
 	public static val AUTOSTART_NAME = PREFIX + ".autostart"
 
 	/** 
-	 * Default value of the property that indicates if the kernel's thread is automatically started when the kernel
+	 * Default value of the property that indicates if the kernel is automatically started when the kernel
 	 * is created.
 	 * 
 	 * @see #AUTOSTART_NAME
 	 */
 	public static val AUTOSTART_VALUE = true
+
+	/** 
+	 * Name of the property that indicates if the kernel is run in its own thread or in the main thread.
+	 * 
+	 * @see #ASYNC_VALUE
+	 */
+	public static val ASYNC_NAME = PREFIX + ".async"
+
+	/** 
+	 * Default value of the property that indicates kernel is run in its own thread or in the main thread.
+	 * 
+	 * @see #ASYNC_NAME
+	 */
+	public static val ASYNC_VALUE = false
 
 	@Accessors(PUBLIC_GETTER)
 	var autostart : boolean = AUTOSTART_VALUE

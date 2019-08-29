@@ -18,14 +18,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.sarl.sre.extensions.simulation.engine
+package io.sarl.sre.extensions.simulation.schedule
 
 import io.sarl.lang.core.Agent
 import java.util.Iterator
-import com.google.inject.ImplementedBy
 
 /**
- * Interface that represents a scheduler of agents.
+ * Scheduler of agents which is running the agents within a loop.
  * 
  * @author $Author: sgalland$
  * @version $FullVersion$
@@ -33,14 +32,11 @@ import com.google.inject.ImplementedBy
  * @mavenartifactid $ArtifactId$
  * @since 0.10
  */
-@ImplementedBy(typeof(LoopAgentScheduler))
-interface AgentScheduler {
+class LoopAgentScheduler implements AgentScheduler {
 
-	/** Build the scheduling algorithm for agents.
-	 *
-	 * @param agents the agents to iterate on.
-	 * @return the iterator on the agents. 
-	 */
-	def schedule(agents : Iterable<Agent>) : Iterator<Agent>
+	override schedule(agents : Iterable<Agent>) : Iterator<Agent> {
+		assert agents !== null
+		agents.iterator
+	}
 
 }
