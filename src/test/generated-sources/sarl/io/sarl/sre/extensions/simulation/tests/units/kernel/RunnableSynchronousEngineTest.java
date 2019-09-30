@@ -28,8 +28,8 @@ import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig;
 import io.sarl.sre.extensions.simulation.kernel.RunnableSynchronousEngine;
 import io.sarl.sre.extensions.simulation.kernel.SynchronousEngineExternalController;
 import io.sarl.sre.extensions.simulation.schedule.AgentScheduler;
+import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorService;
 import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService;
-import io.sarl.sre.services.executor.ExecutorService;
 import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.sre.services.time.TimeService;
 import io.sarl.sre.tests.testutils.mockito.NativeDoubleArgumentCaptor;
@@ -113,7 +113,7 @@ public class RunnableSynchronousEngineTest extends AbstractSarlTest {
     this.externalController = AbstractSarlTest.<SynchronousEngineExternalController>mock(SynchronousEngineExternalController.class);
     Mockito.<Boolean>when(Boolean.valueOf(this.externalController.isRunning())).thenReturn(Boolean.valueOf(true));
     Mockito.<Boolean>when(Boolean.valueOf(this.externalController.isStopped())).thenReturn(Boolean.valueOf(false));
-    ExecutorService _mock = AbstractSarlTest.<ExecutorService>mock(ExecutorService.class);
+    SynchronousExecutorService _mock = AbstractSarlTest.<SynchronousExecutorService>mock(SynchronousExecutorService.class);
     final Provider<ReadWriteLock> _function_2 = () -> {
       return NoReadWriteLock.SINGLETON;
     };
