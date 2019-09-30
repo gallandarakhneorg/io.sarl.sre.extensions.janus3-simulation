@@ -21,16 +21,16 @@
 package io.sarl.sre.extensions.simulation.boot.internal.kernel
 
 import com.google.inject.AbstractModule
-import io.sarl.sre.Kernel
-import com.google.inject.Singleton
-import io.sarl.sre.extensions.simulation.kernel.SimulationKernel
-import io.bootique.BQModuleProvider
 import com.google.inject.Module
 import io.bootique.BQModule
+import io.bootique.BQModuleProvider
+import io.sarl.sre.Kernel
+import io.sarl.sre.boot.internal.kernel.KernelModule
+import io.sarl.sre.extensions.simulation.kernel.SimulationKernel
+import java.util.Collection
 
 import static extension java.util.Collections.*
-import java.util.Collection
-import io.sarl.sre.boot.internal.kernel.KernelModule
+import javax.inject.Singleton
 
 /** 
  * Module configures the simulation kernel .

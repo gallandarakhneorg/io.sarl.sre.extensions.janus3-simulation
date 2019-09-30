@@ -20,21 +20,21 @@
  */
 package io.sarl.sre.extensions.simulation.boot.configs
 
-import io.bootique.annotation.BQConfigProperty
 import com.google.inject.AbstractModule
-import com.google.inject.Provides
-import javax.inject.Singleton
-import io.bootique.config.ConfigurationFactory
 import com.google.inject.Injector
-import io.bootique.BQModuleProvider
 import com.google.inject.Module
-import java.util.Map
+import com.google.inject.Provides
+import io.bootique.BQModule
+import io.bootique.BQModuleProvider
+import io.bootique.annotation.BQConfigProperty
+import io.bootique.config.ConfigurationFactory
 import java.lang.reflect.Type
 import java.util.Collections
-import io.bootique.BQModule
+import java.util.Map
+import javax.inject.Singleton
+import org.eclipse.xtend.lib.annotations.Accessors
 
 import static io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig.*
-import org.eclipse.xtend.lib.annotations.Accessors
 
 /**
  * Constants and utilities for all simulation factories.

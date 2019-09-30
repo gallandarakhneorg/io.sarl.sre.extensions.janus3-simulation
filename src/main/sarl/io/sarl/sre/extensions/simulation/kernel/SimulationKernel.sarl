@@ -20,7 +20,6 @@
  */
 package io.sarl.sre.extensions.simulation.kernel
 
-import com.google.inject.Inject
 import io.bootique.config.ConfigurationFactory
 import io.sarl.sre.Kernel
 import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
@@ -30,6 +29,7 @@ import java.util.concurrent.ExecutorService
 import javax.inject.Singleton
 
 import static extension io.sarl.sre.services.executor.Runnables.*
+import javax.inject.Inject
 
 /** 
  * This class represents the Kernel of the SRE simulation platform.

@@ -20,9 +20,9 @@
  */
 package io.sarl.sre.extensions.simulation.schedule
 
+import com.google.inject.ImplementedBy
 import io.sarl.lang.core.Agent
 import java.util.Iterator
-import com.google.inject.ImplementedBy
 
 /**
  * Interface that represents a scheduler of agents.
