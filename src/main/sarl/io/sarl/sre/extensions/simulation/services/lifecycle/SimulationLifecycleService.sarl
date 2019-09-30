@@ -20,16 +20,30 @@
  */
 package io.sarl.sre.extensions.simulation.services.lifecycle
 
+import com.google.inject.Injector
 import io.sarl.lang.core.Agent
+import io.sarl.lang.core.DynamicSkillProvider
+import io.sarl.sarlspecification.SarlSpecificationChecker
+import io.sarl.sre.KernelScope
+import io.sarl.sre.internal.SmartListenerCollection
 import io.sarl.sre.services.context.Context
+import io.sarl.sre.services.context.ExternalContextMemberListener
+import io.sarl.sre.services.executor.ExecutorService
 import io.sarl.sre.services.lifecycle.InjectionBasedLifecycleService
+import io.sarl.sre.services.lifecycle.LifecycleServiceListener
+import io.sarl.sre.services.lifecycle.SkillUninstaller
 import io.sarl.sre.services.lifecycle.SpawnResult
+import io.sarl.sre.services.logging.LoggingService
 import java.util.ArrayList
 import java.util.Collections
 import java.util.List
 import java.util.UUID
+import java.util.concurrent.locks.ReadWriteLock
 import java.util.logging.Level
+import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
+import io.sarl.sre.services.lifecycle.AgentCreatorProvider
 
 /**
  * Lifecycle service based on simulation.
@@ -48,9 +62,70 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 	var agentsToAdd : List<SpawnQuery> = null
 
 	var agentsToRemove : List<Agent> = null
-	
-	synchronized override spawnAgent(nbAgents : int, spawningAgent : UUID, parent : Context, agentId : UUID,
-		agentClazz : Class<? extends Agent>, params : Object*) : SpawnResult {
+
+	val lockAdd : ReadWriteLock
+
+	val lockDel : ReadWriteLock
+
+	val lockRepo : ReadWriteLock
+
+	/** 
+	 * Constructs the service with the given (injected) injector.
+	 * 
+	 * @param injector
+	 * the injector that should be used by this service for creating the agents.
+	 * @param sarlSpecificationChecker the tool for checking the validity of the SARL specification supported by
+	 * the agents to launch.
+	 * @param skillProvider the provider of skills that should be used to init the agents.
+	 * @param globalListeners is the collection of global listeners to use.
+	 * @param lockProvider the provider of locks.
+	 * @param lifecycleListener the listener at the platform scale on life cycle events.
+	 * @param externalContextListener the listener at the platform scale on context membership events.
+	 * @param skillUninstaller the object this is able to uninstall the skills.
+	 * @param executor the executor service.
+	 * @param logger the logging service.
+	 */
+	@Inject
+	new (injector : Injector, sarlSpecificationChecker : SarlSpecificationChecker, skillProvider : DynamicSkillProvider,
+		globalListeners : SmartListenerCollection<?>, lockProvider : Provider<ReadWriteLock>,
+		@KernelScope lifecycleListener : Provider<LifecycleServiceListener>,
+		@KernelScope externalContextListener : Provider<ExternalContextMemberListener>, skillUninstaller : SkillUninstaller,
+		executor : ExecutorService, logger : LoggingService) {
+		super(injector, sarlSpecificationChecker, skillProvider, globalListeners, lockProvider, lifecycleListener,
+			externalContextListener, skillUninstaller, executor, logger)
+		this.lockAdd = getLockProvider.get
+		this.lockDel = getLockProvider.get
+		this.lockRepo = getLockProvider.get
+	}
+
+	/** 
+	 * Constructs the service.
+	 * 
+	 * @param sarlSpecificationChecker the tool for checking the validity of the SARL specification supported by
+	 * the agents to launch.
+	 * @param creator the provider of agent creators that is used when spawning agents.
+	 * @param globalListeners is the collection of global listeners to use.
+	 * @param lockProvider the provider of locks.
+	 * @param lifecycleListener the listener at the platform scale on life cycle events.
+	 * @param externalContextListener the listener at the platform scale on context membership events.
+	 * @param skillUninstaller the object this is able to uninstall the skills.
+	 * @param executor the executor service.
+	 * @param logger the logging service.
+	 */
+	new (sarlSpecificationChecker : SarlSpecificationChecker, creator : AgentCreatorProvider,
+		globalListeners : SmartListenerCollection<?>, lockProvider : Provider<ReadWriteLock>,
+		lifecycleListener : Provider<LifecycleServiceListener>,
+		externalContextListener : Provider<ExternalContextMemberListener>, skillUninstaller : SkillUninstaller,
+		executor : ExecutorService, logger : LoggingService) {
+		super(sarlSpecificationChecker, creator, globalListeners, lockProvider, lifecycleListener,
+			externalContextListener, skillUninstaller, executor, logger)
+		this.lockAdd = getLockProvider.get
+		this.lockDel = getLockProvider.get
+		this.lockRepo = getLockProvider.get
+	}
+
+	override spawnAgent(nbAgents : int, spawningAgent : UUID, parent : Context, agentId : UUID,
+			agentClazz : Class<? extends Agent>, params : Object*) : SpawnResult {
 		val ids = new ArrayList(nbAgents)
 		if (nbAgents > 0) {
 			if (agentId !== null) {
@@ -64,62 +139,107 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 				}
 			}
 			var query = new SpawnQuery(spawningAgent, parent, ids, agentClazz, params)
-			if (this.agentsToAdd === null) {
-				this.agentsToAdd = newLinkedList
+			this.lockAdd.writeLock.lock
+			try {
+				if (this.agentsToAdd === null) {
+					this.agentsToAdd = newLinkedList
+				}
+				this.agentsToAdd += query
+			} finally {
+				this.lockAdd.writeLock.unlock
 			}
-			this.agentsToAdd += query
 		}
 		return new SpawnResult(ids, Collections::emptyList)
 	}
 
-	synchronized override killAgent(^agent : Agent) : boolean {
+	override killAgent(^agent : Agent) : boolean {
 		assert ^agent !== null
-		if (^agent.isKillableAgent) { 
-			if (this.agentsToRemove === null) {
-				this.agentsToRemove = newLinkedList
-			}
-			this.agentsToRemove += ^agent
+		if (^agent.isKillableAgent) {
+			this.lockDel.writeLock.lock
+			try {
+				if (this.agentsToRemove === null) {
+					this.agentsToRemove = newLinkedList
+				}
+				this.agentsToRemove += ^agent
+			} finally {
+				this.lockDel.writeLock.unlock
+			} 
 			return true
 		}
 		return false
 	}
 
-	protected synchronized override onAgentCreated(^agent : Agent) {
-		synchronized (this.agents) {
+	protected override onAgentCreated(^agent : Agent) {
+		this.lockRepo.writeLock.lock
+		try {
 			this.agents.put(^agent.ID, ^agent)
+		} finally {
+			this.lockRepo.writeLock.unlock
 		}
 	}
 
-	protected synchronized override onAgentKilled(^agent : Agent) {
-		synchronized (this.agents) {
+	protected override onAgentKilled(^agent : Agent) {
+		this.lockRepo.writeLock.lock
+		try {
 			this.agents.remove(^agent.ID)
+		} finally {
+			this.lockRepo.writeLock.unlock
 		}
 	}
 	
 	/** Synchronize the agent lists.
 	 */
-	synchronized def synchronizeAgentList {
-		if (this.agentsToAdd !== null) {
-			var addedAgents = this.agentsToAdd
-			this.agentsToAdd = null
-			for (query : addedAgents) {
-				var result = spawnAgent(query.agentId.size, query.spawningAgent, query.parent, query.agentClazz, query.params) [
-					assert it >= 0
-					if (it < query.agentId.size) {
-						return query.agentId.get(it)
+	def synchronizeAgentList {
+		var addedAgents : List<SpawnQuery>
+		this.lockAdd.readLock.lock
+		try {
+			addedAgents = this.agentsToAdd
+		} finally {
+			this.lockAdd.readLock.unlock
+		}
+		if (addedAgents !== null) {
+			this.lockAdd.writeLock.lock
+			try {
+				addedAgents = this.agentsToAdd
+				this.agentsToAdd = null
+			} finally {
+				this.lockAdd.writeLock.unlock
+			}
+			if (addedAgents !== null) {
+				for (query : addedAgents) {
+					var result = spawnAgent(query.agentId.size, query.spawningAgent, query.parent, query.agentClazz,
+						query.params) [
+						assert it >= 0
+						if (it < query.agentId.size) {
+							return query.agentId.get(it)
+						}
+						return UUID::randomUUID
+					]
+					if (result.error !== null) {
+						loggingService.kernelLogger.log(Level::SEVERE, result.error.localizedMessage, result.error)
 					}
-					return UUID::randomUUID
-				]
-				if (result.error !== null) {
-					loggingService.kernelLogger.log(Level::SEVERE, result.error.localizedMessage, result.error)
 				}
 			}
 		}
-		if (this.agentsToRemove !== null) {
-			var removedAgents = this.agentsToRemove
-			this.agentsToRemove = null
-			for (^agent : removedAgents) {
-				super.killAgent(^agent)
+		var removedAgents : List<Agent>
+		this.lockDel.readLock.lock
+		try {
+			removedAgents = this.agentsToRemove
+		} finally {
+			this.lockDel.readLock.unlock
+		}
+		if (removedAgents !== null) {
+			this.lockDel.writeLock.lock
+			try {
+				removedAgents = this.agentsToRemove
+				this.agentsToRemove = null
+			} finally {
+				this.lockDel.writeLock.unlock
+			}
+			if (removedAgents !== null) {
+				for (^agent : removedAgents) {
+					super.killAgent(^agent)
+				}
 			}
 		}
 	}

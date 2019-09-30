@@ -40,6 +40,8 @@ import static extension org.mockito.Mockito.*
 import io.sarl.sre.services.logging.LoggingService
 import java.util.logging.Logger
 import io.sarl.sre.extensions.simulation.kernel.SynchronousEngineExternalController
+import io.sarl.sre.services.executor.ExecutorService
+import io.sarl.util.concurrent.NoReadWriteLock
 
 /**
  * @author $Author: sgalland$
@@ -105,13 +107,12 @@ class RunnableSynchronousEngineTest extends AbstractSarlTest {
 		when(this.externalController.isRunning).thenReturn(true)
 		when(this.externalController.isStopped).thenReturn(false)
 
-		this.engine = new RunnableSynchronousEngine
-		this.engine.timeConfiguration = this.timeConfig
-		this.engine.lifecycleService = this.lifecycleService
-		this.engine.timeManager = this.timeService
-		this.engine.agentScheduler = this.agentScheduler
-		this.engine.loggingService = this.loggingService
-		this.engine.externalController = this.externalController
+		this.engine = new RunnableSynchronousEngine(
+			this.agentScheduler, this.timeService, this.timeConfig,
+			this.lifecycleService, typeof(ExecutorService).mock,
+			this.loggingService,
+			[NoReadWriteLock::SINGLETON],
+			this.externalController)
 	}
 
 	protected def applyDelay {

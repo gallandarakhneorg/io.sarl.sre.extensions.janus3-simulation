@@ -28,14 +28,18 @@ import io.sarl.sre.services.time.TimeService;
 import io.sarl.sre.tests.units.services.executor.AbstractExecutorServiceTest;
 import io.sarl.tests.api.AbstractSarlTest;
 import io.sarl.tests.api.Nullable;
+import io.sarl.util.concurrent.NoReadWriteLock;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.inject.Provider;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.junit.Assert;
@@ -132,8 +136,11 @@ public class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<
   private TimeService timeService;
   
   @Override
-  public SynchronousExecutorService newService() {
-    return new SynchronousExecutorService();
+  public SynchronousExecutorService newService(final ExecutorService executor) {
+    final Provider<ReadWriteLock> _function = () -> {
+      return NoReadWriteLock.SINGLETON;
+    };
+    return new SynchronousExecutorService(executor, this.timeService, _function);
   }
   
   protected void moveToTime(final long newTime) {
@@ -152,7 +159,6 @@ public class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<
     this.timeService = AbstractSarlTest.<TimeService>mock(TimeService.class);
     Mockito.<TimeUnit>when(this.timeService.getTimePrecision()).thenReturn(TimeUnit.MILLISECONDS);
     super.setUp();
-    this.service.setTimeService(this.timeService);
   }
   
   @Test

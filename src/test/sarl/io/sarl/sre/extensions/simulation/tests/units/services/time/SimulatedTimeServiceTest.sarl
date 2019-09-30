@@ -23,6 +23,8 @@ package io.sarl.sre.extensions.simulation.tests.units.services.time
 
 import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig
 import io.sarl.sre.extensions.simulation.services.time.SimulatedTimeService
+import io.sarl.sre.internal.SequenceListenerNotifier
+import io.sarl.sre.internal.SmartListenerCollection
 import io.sarl.sre.services.logging.LoggingService
 import io.sarl.sre.services.time.TimeListener
 import io.sarl.sre.services.time.TimeService
@@ -64,9 +66,8 @@ class SimulatedTimeServiceTest extends AbstractSarlTest {
 		when(this.config.timeProgressionInLogs).thenReturn(false)
 		when(this.config.unit).thenReturn(TimeUnit::SECONDS)
 		this.listener = typeof(TimeListener).mock
-		this.service = new MyTimeService;
-		this.service.loggingService = this.logger
-		this.service.timeConfiguration = this.config
+		val coll = new SmartListenerCollection(new SequenceListenerNotifier)
+		this.service = new MyTimeService(this.logger, this.config, coll)
 		this.service.addTimeListener(this.listener)
 	}
 

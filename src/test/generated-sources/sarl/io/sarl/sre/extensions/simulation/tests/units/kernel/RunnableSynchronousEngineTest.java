@@ -29,13 +29,17 @@ import io.sarl.sre.extensions.simulation.kernel.RunnableSynchronousEngine;
 import io.sarl.sre.extensions.simulation.kernel.SynchronousEngineExternalController;
 import io.sarl.sre.extensions.simulation.schedule.AgentScheduler;
 import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService;
+import io.sarl.sre.services.executor.ExecutorService;
 import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.sre.services.time.TimeService;
 import io.sarl.sre.tests.testutils.mockito.NativeDoubleArgumentCaptor;
 import io.sarl.tests.api.AbstractSarlTest;
+import io.sarl.util.concurrent.NoReadWriteLock;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.logging.Logger;
+import javax.inject.Provider;
 import org.eclipse.xtext.util.internal.Nullable;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.junit.Before;
@@ -109,14 +113,16 @@ public class RunnableSynchronousEngineTest extends AbstractSarlTest {
     this.externalController = AbstractSarlTest.<SynchronousEngineExternalController>mock(SynchronousEngineExternalController.class);
     Mockito.<Boolean>when(Boolean.valueOf(this.externalController.isRunning())).thenReturn(Boolean.valueOf(true));
     Mockito.<Boolean>when(Boolean.valueOf(this.externalController.isStopped())).thenReturn(Boolean.valueOf(false));
-    RunnableSynchronousEngine _runnableSynchronousEngine = new RunnableSynchronousEngine();
+    ExecutorService _mock = AbstractSarlTest.<ExecutorService>mock(ExecutorService.class);
+    final Provider<ReadWriteLock> _function_2 = () -> {
+      return NoReadWriteLock.SINGLETON;
+    };
+    RunnableSynchronousEngine _runnableSynchronousEngine = new RunnableSynchronousEngine(
+      this.agentScheduler, this.timeService, this.timeConfig, 
+      this.lifecycleService, _mock, 
+      this.loggingService, _function_2, 
+      this.externalController);
     this.engine = _runnableSynchronousEngine;
-    this.engine.setTimeConfiguration(this.timeConfig);
-    this.engine.setLifecycleService(this.lifecycleService);
-    this.engine.setTimeManager(this.timeService);
-    this.engine.setAgentScheduler(this.agentScheduler);
-    this.engine.setLoggingService(this.loggingService);
-    this.engine.setExternalController(this.externalController);
   }
   
   protected OngoingStubbing<Long> applyDelay() {

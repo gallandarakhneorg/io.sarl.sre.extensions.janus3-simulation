@@ -20,25 +20,27 @@
  */
 package io.sarl.sre.extensions.simulation.kernel
 
-import com.google.inject.Inject
 import io.sarl.lang.annotation.PrivateAPI
 import io.sarl.lang.core.Agent
 import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
 import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig
 import io.sarl.sre.extensions.simulation.schedule.AgentScheduler
+import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorService
 import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
 import io.sarl.sre.extensions.simulation.skills.SynchronizedEventBus
+import io.sarl.sre.services.executor.ExecutorService
 import io.sarl.sre.services.lifecycle.LifecycleService
 import io.sarl.sre.services.logging.LoggingService
 import io.sarl.sre.services.time.TimeService
 import java.util.logging.Level
+import org.eclipse.xtend.lib.annotations.Accessors
 
 import static java.lang.Thread.*
 
 import static extension io.sarl.sre.services.lifecycle.AgentLife.*
-import org.eclipse.xtend.lib.annotations.Accessors
-import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorService
-import io.sarl.sre.services.executor.ExecutorService
+import javax.inject.Inject
+import javax.inject.Provider
+import java.util.concurrent.locks.ReadWriteLock
 
 /**
  * Execution engine that imposes synchronous execution of the agents for a single simulation step.
@@ -53,63 +55,51 @@ import io.sarl.sre.services.executor.ExecutorService
  */
 class RunnableSynchronousEngine implements Runnable {
 
-	var timeConfiguration : TimeConfig
+	val timeConfiguration : TimeConfig
 
 	@Accessors(PROTECTED_GETTER)
-	var timeManager : TimeService
+	val timeManager : TimeService
 
 	@Accessors(PROTECTED_GETTER)
-	var lifecycleService : SimulationLifecycleService
+	val lifecycleService : SimulationLifecycleService
 
 	@Accessors(PROTECTED_GETTER)
-	var agentScheduler : AgentScheduler
+	val agentScheduler : AgentScheduler
 
 	@Accessors(PROTECTED_GETTER)
-	var loggingService : LoggingService
+	val loggingService : LoggingService
 
 	@Accessors(PROTECTED_GETTER)
-	var executorService : SynchronousExecutorService
+	val executorService : SynchronousExecutorService
 
 	@Accessors(PROTECTED_GETTER)
-	var externalController : SynchronousEngineExternalController
+	val externalController : SynchronousEngineExternalController
 
+	val lockProvider : Provider<ReadWriteLock>
+
+	/** Constructor. */
 	@Inject
-	def setExternalController(controller : SynchronousEngineExternalController) {
-		this.externalController = controller
+	new (scheduler : AgentScheduler, timeService : TimeService, simulationConfiguration : SimulationConfig,
+		lifecycleService : LifecycleService, executorService : ExecutorService,
+		logger : LoggingService, lockProvider : Provider<ReadWriteLock>, controller : SynchronousEngineExternalController) {
+		this(scheduler, timeService, simulationConfiguration.time, lifecycleService, executorService, logger,
+			lockProvider, controller)
 	}
 
-	@Inject
-	def setAgentScheduler(scheduler : AgentScheduler) {
+	/** Constructor.
+	 */
+	new (scheduler : AgentScheduler, timeService : TimeService, timeConfiguration : TimeConfig,
+		lifecycleService : LifecycleService, executorService : ExecutorService,
+		logger : LoggingService, lockProvider : Provider<ReadWriteLock>,
+		controller : SynchronousEngineExternalController) {
 		this.agentScheduler = scheduler
-	}
-
-	@Inject
-	def setTimeConfiguration(simulationConfiguration : SimulationConfig) {
-		this.timeConfiguration = simulationConfiguration.time
-	}
-	
-	def setTimeConfiguration(timeConfiguration : TimeConfig) {
-		this.timeConfiguration = timeConfiguration
-	}
-
-	@Inject
-	def setTimeManager(timeService : TimeService) {
 		this.timeManager = timeService
-	}
-
-	@Inject
-	def setLifecycleService(lifecycleService : LifecycleService) {
+		this.timeConfiguration = timeConfiguration
 		this.lifecycleService = lifecycleService as SimulationLifecycleService
-	}
-
-	@Inject
-	def setLoggingService(logger : LoggingService) {
-		this.loggingService = logger
-	}
-
-	@Inject
-	def setExecutorService(executorService : ExecutorService) {
 		this.executorService = executorService as SynchronousExecutorService
+		this.loggingService = logger
+		this.lockProvider = lockProvider
+		this.externalController = controller
 	}
 	
 	/** Run one step of the simulation loop.
@@ -245,7 +235,7 @@ class RunnableSynchronousEngine implements Runnable {
 	@SuppressWarnings("use_reserved_sarl_annotation")
 	@PrivateAPI(isCallerOnly = true)
 	protected def preRunSingleAgent(^agent : Agent, untilTime : double) : void {
-		var ^capacity = ^agent.life.eventBus
+		var ^capacity = getLife(^agent, this.lockProvider).eventBus
 		assert ^capacity !== null
 		val bus = ^capacity.getEventBus(typeof(SynchronizedEventBus))
 		assert bus !== null
@@ -260,7 +250,7 @@ class RunnableSynchronousEngine implements Runnable {
 	@SuppressWarnings("use_reserved_sarl_annotation")
 	@PrivateAPI(isCallerOnly = true)
 	protected def runSingleAgent(^agent : Agent, untilTime : double) : void {
-		var ^capacity = ^agent.life.eventBus
+		var ^capacity = getLife(^agent, this.lockProvider).eventBus
 		assert ^capacity !== null
 		val bus = ^capacity.getEventBus(typeof(SynchronizedEventBus))
 		assert bus !== null

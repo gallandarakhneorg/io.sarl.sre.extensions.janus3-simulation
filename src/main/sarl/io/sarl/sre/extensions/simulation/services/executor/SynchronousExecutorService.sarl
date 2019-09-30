@@ -31,12 +31,15 @@ import java.util.List
 import java.util.Map
 import java.util.concurrent.Callable
 import java.util.concurrent.Delayed
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReadWriteLock
 import java.util.logging.Logger
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /** 
@@ -51,8 +54,9 @@ import javax.inject.Singleton
 @Singleton
 class SynchronousExecutorService extends AbstractExecutorService implements PreReleasableService {
 
-	@Inject
-	var timeService : TimeService
+	val timeService : TimeService
+
+	val taskLock : ReadWriteLock
 
 	val scheduledTasks : Map<Long, Deque<SreScheduledFuture<?>>> = newTreeMap(null)
 
@@ -60,13 +64,17 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 
 	var previousTime : long = 0
 
-	/** Change the time service that is used by this executor service.
+	/** Constructor.
 	 *
-	 * @param service the new service.
+	 * @param executor the low level executor service.
+	 * @param time the time service.
+	 * @param lockProvider the provider of synchronization locks.
 	 */
 	@Inject
-	def setTimeService(service : TimeService) {
-		this.timeService = service
+	new (executor : ExecutorService, time : TimeService, lockProvider : Provider<ReadWriteLock>) {
+		super(executor)
+		this.timeService = time
+		this.taskLock = lockProvider.get
 	}
 
 	/** Create a task with the given runnable.
@@ -566,18 +574,24 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 	 * @param command the command to run.
 	 */
 	protected def scheduleAtTime(time : long, command : SreScheduledFuture<T>) : SreScheduledFuture<T> with T {
-		var tasks = this.scheduledTaskBuffer.get(time)
-		if (tasks === null) {
-			tasks = newLinkedList
-			this.scheduledTaskBuffer.put(time, tasks)
+		this.taskLock.writeLock.lock
+		try {
+			var tasks = this.scheduledTaskBuffer.get(time)
+			if (tasks === null) {
+				tasks = newLinkedList
+				this.scheduledTaskBuffer.put(time, tasks)
+			}
+			tasks += command
+		} finally {
+			this.taskLock.writeLock.unlock
 		}
-		tasks += command
 		return command
 	}
 
 	private def syncBuffer {
-		var iterator = this.scheduledTaskBuffer.entrySet.iterator
-		synchronized (this) {
+		this.taskLock.writeLock.lock
+		try {
+			var iterator = this.scheduledTaskBuffer.entrySet.iterator
 			while (iterator.hasNext) {
 				var entry = iterator.next
 				iterator.remove
@@ -588,6 +602,8 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 				}
 				tasks += entry.value
 			}
+		} finally {
+			this.taskLock.writeLock.unlock
 		}
 	}
 
@@ -601,7 +617,8 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 	 */
 	def getScheduledTasks(startTime : long, endTime : long) : List<SreScheduledFuture<?>> {
 		var consumedTasks = newLinkedList
-		synchronized (this) {
+		this.taskLock.readLock.lock
+		try {
 			var iterator = this.scheduledTasks.entrySet.iterator
 			while (iterator.hasNext) {
 				var entry = iterator.next
@@ -612,8 +629,10 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 					}
 				}
 			}
+		} finally {
+			this.taskLock.readLock.unlock
 		}
-		consumedTasks
+		return consumedTasks
 	}
 
 	/** Replies the scheduled tasks.
@@ -624,15 +643,18 @@ class SynchronousExecutorService extends AbstractExecutorService implements PreR
 	 */
 	def getScheduledTasks() : List<SreScheduledFuture<?>> {
 		var tasks = newLinkedList
-		synchronized (this) {
+		this.taskLock.readLock.lock
+		try {
 			for (list : this.scheduledTasks.values) {
 				tasks += list
 			}
 			for (list : this.scheduledTaskBuffer.values) {
 				tasks += list
 			}
+		} finally {
+			this.taskLock.readLock.unlock
 		}
-		tasks
+		return tasks
 	}
 
 }

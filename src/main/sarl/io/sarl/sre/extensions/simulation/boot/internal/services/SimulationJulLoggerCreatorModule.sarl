@@ -30,6 +30,7 @@ import io.sarl.sre.boot.configs.subconfigs.BootConfig
 import io.sarl.sre.boot.internal.services.LoggerCreatorModule
 import io.sarl.sre.extensions.simulation.services.logging.SimulationJulLoggerCreator
 import io.sarl.sre.services.logging.JulLoggerCreator
+import io.sarl.sre.services.time.TimeService
 import java.util.Collection
 import java.util.logging.Logger
 import javax.inject.Provider
@@ -37,7 +38,7 @@ import javax.inject.Singleton
 import org.arakhne.afc.bootique.log4j.configs.Log4jIntegrationConfig
 
 import static extension java.util.Collections.*
-import io.sarl.sre.services.time.TimeService
+import java.util.concurrent.locks.ReadWriteLock
 
 /** 
  * Module for the logger creator that is dedicated to simulation.
@@ -62,15 +63,17 @@ class SimulationJulLoggerCreatorModule extends AbstractModule {
 	 * @param injector the injector of the members.
 	 * @param loggerProvider the provider of JUL logger.
 	 * @param timeProvider the provider of time service.
+	 * @param lockProvider the provider of synchronization locks.
 	 * @return the logger creator.
 	 */
 	@Provides
 	@Singleton
 	def provideLoggerCreator(loggingConfig : Log4jIntegrationConfig, bootFactory : BootConfig, injector : Injector,
-		loggerProvider : Provider<Logger>, timeProvider : Provider<TimeService>) : JulLoggerCreator {
+		loggerProvider : Provider<Logger>, timeProvider : Provider<TimeService>,
+		lockProvider : Provider<ReadWriteLock>) : JulLoggerCreator {
 		var creator = new SimulationJulLoggerCreator(
 			loggingConfig.level.toJul,
-			bootFactory.programName, loggerProvider, timeProvider)
+			bootFactory.programName, loggerProvider, timeProvider, lockProvider)
 		injector.injectMembers(creator)
 		return creator
 	}

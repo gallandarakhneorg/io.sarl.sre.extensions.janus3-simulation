@@ -26,8 +26,11 @@ import io.sarl.lang.annotation.SarlElementType;
 import io.sarl.lang.annotation.SarlSourceCode;
 import io.sarl.lang.annotation.SarlSpecification;
 import io.sarl.lang.annotation.SyntheticMember;
+import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig;
 import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig;
 import io.sarl.sre.extensions.simulation.services.time.SimulatedTimeService;
+import io.sarl.sre.internal.SequenceListenerNotifier;
+import io.sarl.sre.internal.SmartListenerCollection;
 import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.sre.services.time.TimeListener;
 import io.sarl.sre.services.time.TimeService;
@@ -35,6 +38,7 @@ import io.sarl.tests.api.AbstractSarlTest;
 import io.sarl.tests.api.Nullable;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
+import javax.inject.Inject;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.junit.Assert;
 import org.junit.Before;
@@ -76,10 +80,27 @@ public class SimulatedTimeServiceTest extends AbstractSarlTest {
     
     /**
      * Create a simulated time service.
+     * 
+     * @param loggingService the logging service.
+     * @param config the accessor to the simulation configuration.
+     * @param listeners the empty collection of listeners that must be used by this service.
      */
     @SyntheticMember
-    public MyTimeService() {
-      super();
+    @Inject
+    public MyTimeService(final LoggingService loggingService, final SimulationConfig config, final SmartListenerCollection<TimeListener> listeners) {
+      super(loggingService, config, listeners);
+    }
+    
+    /**
+     * Create a simulated time service.
+     * 
+     * @param loggingService the logging service.
+     * @param config the accessor to the time configuration.
+     * @param listeners the empty collection of listeners that must be used by this service.
+     */
+    @SyntheticMember
+    public MyTimeService(final LoggingService loggingService, final TimeConfig config, final SmartListenerCollection<TimeListener> listeners) {
+      super(loggingService, config, listeners);
     }
   }
   
@@ -103,10 +124,10 @@ public class SimulatedTimeServiceTest extends AbstractSarlTest {
     Mockito.<Boolean>when(Boolean.valueOf(this.config.isTimeProgressionInLogs())).thenReturn(Boolean.valueOf(false));
     Mockito.<TimeUnit>when(this.config.getUnit()).thenReturn(TimeUnit.SECONDS);
     this.listener = AbstractSarlTest.<TimeListener>mock(TimeListener.class);
-    SimulatedTimeServiceTest.MyTimeService _myTimeService = new SimulatedTimeServiceTest.MyTimeService();
+    SequenceListenerNotifier _sequenceListenerNotifier = new SequenceListenerNotifier();
+    final SmartListenerCollection<TimeListener> coll = new SmartListenerCollection<TimeListener>(_sequenceListenerNotifier);
+    SimulatedTimeServiceTest.MyTimeService _myTimeService = new SimulatedTimeServiceTest.MyTimeService(this.logger, this.config, coll);
     this.service = _myTimeService;
-    this.service.setLoggingService(this.logger);
-    this.service.setTimeConfiguration(this.config);
     this.service.addTimeListener(this.listener);
   }
   

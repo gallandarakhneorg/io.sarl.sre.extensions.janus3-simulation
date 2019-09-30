@@ -25,8 +25,10 @@ import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorSe
 import io.sarl.sre.services.time.TimeService
 import io.sarl.sre.tests.units.services.executor.AbstractExecutorServiceTest
 import io.sarl.tests.api.Nullable
+import io.sarl.util.concurrent.NoReadWriteLock
 import java.util.UUID
 import java.util.concurrent.Callable
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import org.junit.Test
@@ -47,8 +49,8 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 	@Nullable
 	var timeService : TimeService
 	
-	override newService : SynchronousExecutorService {
-		return new SynchronousExecutorService
+	override newService(executor : ExecutorService) : SynchronousExecutorService {
+		return new SynchronousExecutorService(executor, this.timeService, [NoReadWriteLock::SINGLETON])
 	}
 
 	protected def moveToTime(newTime : long) : void {
@@ -64,7 +66,6 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		this.timeService = typeof(TimeService).mock
 		when(this.timeService.timePrecision).thenReturn(TimeUnit::MILLISECONDS)
 		super.setUp
-		this.service.timeService = this.timeService
 	}
 
 	@Test

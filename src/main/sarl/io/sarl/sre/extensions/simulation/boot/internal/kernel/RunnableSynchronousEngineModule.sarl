@@ -21,13 +21,21 @@
 package io.sarl.sre.extensions.simulation.boot.internal.kernel
 
 import com.google.inject.AbstractModule
-import com.google.inject.Injector
 import com.google.inject.Module
 import com.google.inject.Provides
 import io.bootique.BQModule
 import io.bootique.BQModuleProvider
+import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
 import io.sarl.sre.extensions.simulation.kernel.RunnableSynchronousEngine
 import io.sarl.sre.extensions.simulation.kernel.SynchronousEngine
+import io.sarl.sre.extensions.simulation.kernel.SynchronousEngineExternalController
+import io.sarl.sre.extensions.simulation.schedule.AgentScheduler
+import io.sarl.sre.services.executor.ExecutorService
+import io.sarl.sre.services.lifecycle.LifecycleService
+import io.sarl.sre.services.logging.LoggingService
+import io.sarl.sre.services.time.TimeService
+import java.util.concurrent.locks.ReadWriteLock
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /** 
@@ -48,10 +56,13 @@ class RunnableSynchronousEngineModule extends AbstractModule {
 	@Provides
 	@SynchronousEngine
 	@Singleton
-	def getSynchronousEngine(injector : Injector) : Runnable {
-		var engineImpl = new RunnableSynchronousEngine
-		injector.injectMembers(engineImpl)
-		return engineImpl
+	def getSynchronousEngine(scheduler : AgentScheduler, timeService : TimeService,
+		simulationConfiguration : SimulationConfig, lifecycleService : LifecycleService,
+		executorService : ExecutorService, logger : LoggingService, 
+		lockProvider : Provider<ReadWriteLock>,
+		controller : SynchronousEngineExternalController) : Runnable {
+		new RunnableSynchronousEngine(scheduler, timeService, simulationConfiguration,
+			lifecycleService, executorService, logger, lockProvider, controller)
 	}
 
 }

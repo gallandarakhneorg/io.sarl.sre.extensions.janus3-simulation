@@ -24,19 +24,29 @@ import io.sarl.lang.annotation.SarlElementType;
 import io.sarl.lang.annotation.SarlSpecification;
 import io.sarl.lang.annotation.SyntheticMember;
 import io.sarl.lang.core.Agent;
-import io.sarl.lang.core.DynamicSkillProvider;
 import io.sarl.sarlspecification.SarlSpecificationChecker;
 import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService;
 import io.sarl.sre.extensions.simulation.tests.units.services.lifecycle.MockAgent;
+import io.sarl.sre.internal.SequenceListenerNotifier;
+import io.sarl.sre.internal.SmartListenerCollection;
 import io.sarl.sre.services.context.Context;
+import io.sarl.sre.services.context.ExternalContextMemberListener;
+import io.sarl.sre.services.executor.ExecutorService;
 import io.sarl.sre.services.lifecycle.AgentCreatorProvider;
+import io.sarl.sre.services.lifecycle.LifecycleServiceListener;
+import io.sarl.sre.services.lifecycle.SkillUninstaller;
 import io.sarl.sre.services.lifecycle.SpawnResult;
+import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.tests.api.AbstractSarlTest;
 import io.sarl.tests.api.Nullable;
+import io.sarl.util.concurrent.NoReadWriteLock;
 import java.util.Collections;
+import java.util.EventListener;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
+import javax.inject.Provider;
 import org.eclipse.xtext.xbase.lib.CollectionLiterals;
 import org.eclipse.xtext.xbase.lib.Functions.Function1;
 import org.eclipse.xtext.xbase.lib.Pure;
@@ -65,8 +75,18 @@ public class SimulationLifecycleServiceTest extends AbstractSarlTest {
   @SarlSpecification("0.10")
   @SarlElementType(10)
   public static class MockService extends SimulationLifecycleService {
-    public MockService(final SarlSpecificationChecker sarlSpecificationChecker, final DynamicSkillProvider skillProvider, final AgentCreatorProvider agentFactoryProvider) {
-      super(sarlSpecificationChecker, skillProvider, agentFactoryProvider);
+    public MockService(final SarlSpecificationChecker sarlSpecificationChecker, final AgentCreatorProvider agentFactoryProvider) {
+      super(sarlSpecificationChecker, agentFactoryProvider, 
+        new SmartListenerCollection<EventListener>(new SequenceListenerNotifier()), 
+        ((Provider<ReadWriteLock>) () -> {
+          return NoReadWriteLock.SINGLETON;
+        }), ((Provider<LifecycleServiceListener>) () -> {
+        return AbstractSarlTest.<LifecycleServiceListener>mock(LifecycleServiceListener.class);
+      }), 
+        ((Provider<ExternalContextMemberListener>) () -> {
+          return AbstractSarlTest.<ExternalContextMemberListener>mock(ExternalContextMemberListener.class);
+        }), AbstractSarlTest.<SkillUninstaller>mock(SkillUninstaller.class), 
+        AbstractSarlTest.<ExecutorService>mock(ExecutorService.class), AbstractSarlTest.<LoggingService>mock(LoggingService.class));
     }
     
     @Override
@@ -87,7 +107,7 @@ public class SimulationLifecycleServiceTest extends AbstractSarlTest {
     }
     
     @Override
-    public synchronized boolean killAgent(final Agent agent) {
+    public boolean killAgent(final Agent agent) {
       this.onAgentKilled(agent);
       return true;
     }
@@ -100,9 +120,6 @@ public class SimulationLifecycleServiceTest extends AbstractSarlTest {
   private SarlSpecificationChecker checker;
   
   @Nullable
-  private DynamicSkillProvider skillProvider;
-  
-  @Nullable
   private SimulationLifecycleServiceTest.MockService service;
   
   @Before
@@ -110,8 +127,7 @@ public class SimulationLifecycleServiceTest extends AbstractSarlTest {
     this.agentFactoryProvider = AbstractSarlTest.<AgentCreatorProvider>mock(AgentCreatorProvider.class);
     this.checker = AbstractSarlTest.<SarlSpecificationChecker>mock(SarlSpecificationChecker.class);
     Mockito.<Boolean>when(Boolean.valueOf(this.checker.isValidSarlElement(ArgumentMatchers.<Class>any(Class.class)))).thenReturn(Boolean.valueOf(true));
-    this.skillProvider = AbstractSarlTest.<DynamicSkillProvider>mock(DynamicSkillProvider.class);
-    SimulationLifecycleServiceTest.MockService _mockService = new SimulationLifecycleServiceTest.MockService(this.checker, this.skillProvider, this.agentFactoryProvider);
+    SimulationLifecycleServiceTest.MockService _mockService = new SimulationLifecycleServiceTest.MockService(this.checker, this.agentFactoryProvider);
     this.service = _mockService;
   }
   

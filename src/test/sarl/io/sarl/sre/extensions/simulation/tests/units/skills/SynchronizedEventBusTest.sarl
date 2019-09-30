@@ -29,6 +29,7 @@ import io.sarl.sre.extensions.simulation.skills.TimestampedEvent
 import io.sarl.sre.services.executor.ExecutorService
 import io.sarl.tests.api.AbstractSarlTest
 import io.sarl.tests.api.Nullable
+import io.sarl.util.concurrent.NoReadWriteLock
 import java.util.logging.Logger
 import org.junit.Before
 import org.junit.Test
@@ -62,7 +63,7 @@ class SynchronizedEventBusTest extends AbstractSarlTest {
 		this.logger = typeof(Logger).mock
 		this.executor = typeof(ExecutorService).mock
 		this.dispatcher = typeof(BehaviorGuardEvaluatorRegistry).mock
-		this.eventBus = new SynchronizedEventBus(this.executor, this.dispatcher)
+		this.eventBus = new SynchronizedEventBus(this.executor, [NoReadWriteLock::SINGLETON], this.dispatcher)
 	}
 
 	@Test

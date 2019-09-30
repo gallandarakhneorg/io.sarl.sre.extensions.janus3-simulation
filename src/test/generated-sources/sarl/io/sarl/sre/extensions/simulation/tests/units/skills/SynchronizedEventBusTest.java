@@ -31,9 +31,12 @@ import io.sarl.sre.extensions.simulation.skills.TimestampedEvent;
 import io.sarl.sre.services.executor.ExecutorService;
 import io.sarl.tests.api.AbstractSarlTest;
 import io.sarl.tests.api.Nullable;
+import io.sarl.util.concurrent.NoReadWriteLock;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.logging.Logger;
+import javax.inject.Provider;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.junit.Assert;
 import org.junit.Before;
@@ -86,7 +89,10 @@ public class SynchronizedEventBusTest extends AbstractSarlTest {
     this.logger = AbstractSarlTest.<Logger>mock(Logger.class);
     this.executor = AbstractSarlTest.<ExecutorService>mock(ExecutorService.class);
     this.dispatcher = AbstractSarlTest.<BehaviorGuardEvaluatorRegistry>mock(BehaviorGuardEvaluatorRegistry.class);
-    SynchronizedEventBus _synchronizedEventBus = new SynchronizedEventBus(this.executor, this.dispatcher);
+    final Provider<ReadWriteLock> _function = () -> {
+      return NoReadWriteLock.SINGLETON;
+    };
+    SynchronizedEventBus _synchronizedEventBus = new SynchronizedEventBus(this.executor, _function, this.dispatcher);
     this.eventBus = _synchronizedEventBus;
   }
   

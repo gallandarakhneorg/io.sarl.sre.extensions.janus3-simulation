@@ -23,6 +23,7 @@ package io.sarl.sre.extensions.simulation.services.logging
 import io.sarl.sre.services.logging.JulLoggerCreator
 import io.sarl.sre.services.time.TimeService
 import java.io.PrintStream
+import java.util.concurrent.locks.ReadWriteLock
 import java.util.logging.Formatter
 import java.util.logging.Level
 import java.util.logging.Logger
@@ -41,24 +42,28 @@ class SimulationJulLoggerCreator extends JulLoggerCreator {
 
 	val timeProvider : Provider<TimeService>
 
+	val lockProvider : Provider<ReadWriteLock>
+	
 	/** Build a logger creator.
 	 * 
 	 * @param defaultLevel the logging level for new loggers.
 	 * @param defaultProgramName the default name of the program.
 	 * @param loggerProvider the provider of loggers.
 	 * @param timeProvider the provider of simulation time.
+	 * @param lockProvider the provider of synchronization locks.
 	 * @param formatter the log message formatter to be used.
 	 */
 	new (defaultLevel : Level, defaultProgramName : String, loggerProvider : Provider<Logger>,
 		timeProvider : Provider<TimeService>,
+		lockProvider : Provider<ReadWriteLock>, 
 		formatter : Formatter = null) {
 		super(defaultLevel, defaultProgramName, loggerProvider, formatter)
-		assert timeProvider !== null
 		this.timeProvider = timeProvider
+		this.lockProvider = lockProvider
 	}
 	
 	protected override createFormatter : Formatter {
-		new SimulationFormatter(this.timeProvider)
+		new SimulationFormatter(this.timeProvider, this.lockProvider)
 	}
 
 	override createConsoleLogger(name : String, output : PrintStream) : Logger {

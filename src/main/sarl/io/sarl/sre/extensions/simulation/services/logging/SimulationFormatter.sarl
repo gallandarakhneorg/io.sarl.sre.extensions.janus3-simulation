@@ -27,6 +27,7 @@ import java.io.StringWriter
 import java.io.PrintWriter
 import javax.inject.Provider
 import io.sarl.sre.services.time.TimeService
+import java.util.concurrent.locks.ReadWriteLock
 
 /** 
  * Print a brief summary of the {@code LogRecord} in a human readable
@@ -56,15 +57,18 @@ class SimulationFormatter extends Formatter {
 
 	val timeProvider : Provider<TimeService>
 
+	val lock : ReadWriteLock
+
 	var timeService : TimeService
 
 	/** Constructor.
 	 *
 	 * @param timeProvider the provider of time service.
+	 * @param lockProvider a provider of synchronization locks.
 	 */
-	new(timeProvider : Provider<TimeService>) {
-		assert timeProvider !== null
+	new(timeProvider : Provider<TimeService>, lockProvider : Provider<ReadWriteLock>) {
 		this.timeProvider = timeProvider
+		this.lock = lockProvider.get
 	}
 
 	/** Replies the time service.
@@ -88,8 +92,13 @@ class SimulationFormatter extends Formatter {
 		return DEFAULT_FORMAT
 	}
 
-	synchronized def format(record : LogRecord) : String {
-		this.dat.time = record.millis
+	def format(record : LogRecord) : String {
+		this.lock.writeLock.lock
+		try {
+			this.dat.time = record.millis
+		} finally {
+			this.lock.writeLock.unlock
+		}
 		var source : String
 		if (record.sourceClassName !== null) {
 			source = record.sourceClassName
@@ -111,9 +120,16 @@ class SimulationFormatter extends Formatter {
 			}
 		}
 		var ts = getTimeService
+		var dt : Date
+		this.lock.readLock.lock
+		try {
+			dt = this.dat.clone as Date
+		} finally {
+			this.lock.readLock.unlock
+		}
 		return String::format(
 			getFormatSpecification,
-			this.dat,
+			dt,
 			source,
 			record.loggerName,
 			record.level.localizedName,
