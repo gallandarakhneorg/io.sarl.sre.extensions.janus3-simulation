@@ -30,16 +30,21 @@ import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorSe
 import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
 import io.sarl.sre.services.logging.LoggingService
 import io.sarl.sre.services.time.TimeService
-import io.sarl.sre.tests.testutils.mockito.NativeDoubleArgumentCaptor
-import io.sarl.tests.api.AbstractSarlTest
-import io.sarl.util.concurrent.NoReadWriteLock
+import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
+import io.sarl.sre.test.framework.mockito.NativeDoubleArgumentCaptor
+import io.sarl.tests.api.Nullable
+import io.sarl.tests.api.extensions.ContextInitExtension
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension
 import java.util.Iterator
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Logger
-import org.eclipse.xtext.util.internal.Nullable
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.^extension.ExtendWith
 
+import static extension io.sarl.tests.api.tools.TestAssertions.*
 import static extension org.mockito.ArgumentMatchers.*
 import static extension org.mockito.Mockito.*
 
@@ -49,8 +54,17 @@ import static extension org.mockito.Mockito.*
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SuppressWarnings("all")
-class RunnableSynchronousEngineTest extends AbstractSarlTest {
+@ExtendWith(#[
+	typeof(ContextInitExtension),
+	typeof(JavaVersionCheckExtension),
+	typeof(PropertyRestoreExtension)
+])
+@DisplayName("unit: RunnableSynchronousEngine test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+class RunnableSynchronousEngineTest {
 
 	@Nullable
 	var engine : RunnableSynchronousEngine
@@ -76,7 +90,7 @@ class RunnableSynchronousEngineTest extends AbstractSarlTest {
 	@Nullable
 	var agents : Iterable<Agent>
 
-	@Before
+	@BeforeEach
 	def setUp : void {
 		this.agentScheduler = typeof(AgentScheduler).mock
 		when(this.agentScheduler.schedule(typeof(Iterable).any)).thenAnswer [
@@ -109,9 +123,9 @@ class RunnableSynchronousEngineTest extends AbstractSarlTest {
 
 		this.engine = new RunnableSynchronousEngine(
 			this.agentScheduler, this.timeService, this.timeConfig,
-			this.lifecycleService, typeof(SynchronousExecutorService).mock,
+			this.lifecycleService,
+			typeof(SynchronousExecutorService).mock,
 			this.loggingService,
-			[NoReadWriteLock::SINGLETON],
 			this.externalController)
 	}
 
@@ -124,6 +138,7 @@ class RunnableSynchronousEngineTest extends AbstractSarlTest {
 	}
 
 	@Test
+	@DisplayName("run with delay")
 	def run_delay {
 		applyDelay
 
@@ -140,7 +155,9 @@ class RunnableSynchronousEngineTest extends AbstractSarlTest {
 		12.34.assertEpsilonEquals(doubleArg.value as double)
 	}
 
+	@SuppressWarnings("unused_local_variable")
 	@Test
+	@DisplayName("run without delay")
 	def run_noDelay {
 		applyNoDelay
 

@@ -23,19 +23,20 @@ package io.sarl.sre.extensions.simulation.tests.units.services.executor
 
 import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorService
 import io.sarl.sre.services.time.TimeService
-import io.sarl.sre.tests.units.services.executor.AbstractExecutorServiceTest
 import io.sarl.tests.api.Nullable
-import io.sarl.util.concurrent.NoReadWriteLock
 import java.util.UUID
 import java.util.concurrent.Callable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
-import org.junit.Test
-import org.mockito.ArgumentCaptor
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
 
 import static org.mockito.ArgumentMatchers.*
 
+import static extension org.junit.jupiter.api.Assertions.*
+import static extension org.mockito.ArgumentCaptor.*
 import static extension org.mockito.Mockito.*
 
 /**
@@ -44,13 +45,18 @@ import static extension org.mockito.Mockito.*
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
+@DisplayName("unit: SynchronousExecutorService test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
 class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<SynchronousExecutorService> {
 
 	@Nullable
 	var timeService : TimeService
 	
 	override newService(executor : ExecutorService) : SynchronousExecutorService {
-		return new SynchronousExecutorService(executor, this.timeService, [NoReadWriteLock::SINGLETON])
+		return new SynchronousExecutorService(executor, this.timeService)
 	}
 
 	protected def moveToTime(newTime : long) : void {
@@ -69,59 +75,35 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 	}
 
 	@Test
-	def execute : void {
+	@DisplayName("executeAsap(Runnable)")
+	def executeAsapRunnable : void {
 		var run = typeof(Runnable).mock
 		this.service.executeAsap(this.logger, run)
 
 		run.verify.run
 
-		verifyZeroInteractions(this.logger)
+		verifyNoInteractions(this.logger)
 	}
 	
 	@Test
-	def execute_exception : void {
+	@DisplayName("executeAsap(Runnable) with exception")
+	def executeAsapRunnable_exception : void {
 		var run = new FailingRunnable().spy
 		
 		this.service.executeAsap(this.logger, run)
 
 		run.verify.run
 		
-		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
-		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		var capturedLevel = typeof(Level).forClass
+		var capturedException = typeof(Throwable).forClass
 		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
 		Level::SEVERE.assertSame(capturedLevel.value)
 		run.exception.assertSame(capturedException.value)
 	}
 
 	@Test
-	def submitRunnable : void {
-		var run = typeof(Runnable).mock
-		
-		var future = this.service.executeAsap(this.logger, run)
-		
-		future.assertNotNull
-		run.verify.run
-		verifyZeroInteractions(this.logger)
-	}
-	
-	@Test
-	def submitRunnable_exception : void {
-		var run = new FailingRunnable().spy
-		
-		var future = this.service.executeAsap(this.logger, run)
-		
-		future.assertNotNull
-		run.verify.run
-		
-		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
-		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
-		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
-		Level::SEVERE.assertSame(capturedLevel.value)
-		run.exception.assertSame(capturedException.value)
-	}
-
-	@Test
-	def submitRunnableFuture : void {
+	@DisplayName("executeAsap(Runnable) with future value")
+	def executeAsapRunnableFuture : void {
 		var value = UUID::randomUUID
 		var run = typeof(Runnable).mock
 		
@@ -130,11 +112,12 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		future.assertNotNull
 		value.assertSame(future.get)
 		run.verify.run
-		verifyZeroInteractions(this.logger)
+		verifyNoInteractions(this.logger)
 	}
 
 	@Test
-	def submitRunnableFuture_exception : void {
+	@DisplayName("executeAsap(Runnable) with future value and exception")
+	def executeAsapRunnableFuture_exception : void {
 		var value = UUID::randomUUID
 		var run = new FailingRunnable().spy
 		
@@ -144,26 +127,28 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		value.assertSame(future.get)
 		run.verify.run
 		
-		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
-		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		var capturedLevel = typeof(Level).forClass
+		var capturedException = typeof(Throwable).forClass
 		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
 		Level::SEVERE.assertSame(capturedLevel.value)
 		run.exception.assertSame(capturedException.value)
 	}
 
 	@Test
-	def submitCallable : void {
+	@DisplayName("executeAsap(Callable)")
+	def executeAsapCallable : void {
 		var run = typeof(Callable).mock
 		
 		var future = this.service.executeAsap(this.logger, run)
 		
 		future.assertNotNull
 		verify(run).call
-		verifyZeroInteractions(this.logger)
+		verifyNoInteractions(this.logger)
 	}
 
 	@Test
-	def submitCallable_exception : void {
+	@DisplayName("executeAsap(Callable) with exception")
+	def executeAsapCallable_exception : void {
 		var run = new FailingCallable().spy
 		
 		var future = this.service.executeAsap(this.logger, run)
@@ -171,21 +156,22 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		future.assertNotNull
 		verify(run).call
 		
-		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
-		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		var capturedLevel = typeof(Level).forClass
+		var capturedException = typeof(Throwable).forClass
 		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
 		Level::SEVERE.assertSame(capturedLevel.value)
 		run.exception.assertSame(capturedException.value)
 	}
 
 	@Test
+	@DisplayName("schedule(Runnable)")
 	def scheduleRunnable : void {
 		var run = typeof(Runnable).mock
 		
 		var future = this.service.schedule(this.logger, 34, TimeUnit::DAYS, run)
 		
 		future.assertNotNull
-		verifyZeroInteractions(run)
+		verifyNoInteractions(run)
 		
 		var tasks = this.service.scheduledTasks
 		tasks.assertNotNull
@@ -199,17 +185,18 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 
 		tasks = this.service.scheduledTasks
 		tasks.empty.assertTrue
-		verifyZeroInteractions(this.logger)
+		verifyNoInteractions(this.logger)
 	}
 
 	@Test
+	@DisplayName("schedule(Runnable) with exception")
 	def scheduleRunnable_exception : void {
 		var run = new FailingRunnable().spy
 		
 		var future = this.service.schedule(this.logger, 34, TimeUnit::DAYS, run)
 		
 		future.assertNotNull
-		verifyZeroInteractions(run)
+		verifyNoInteractions(run)
 		
 		var tasks = this.service.scheduledTasks
 		tasks.assertNotNull
@@ -224,21 +211,22 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		tasks = this.service.scheduledTasks
 		tasks.empty.assertTrue
 
-		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
-		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		var capturedLevel = typeof(Level).forClass
+		var capturedException = typeof(Throwable).forClass
 		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
 		Level::SEVERE.assertSame(capturedLevel.value)
 		run.exception.assertSame(capturedException.value)
 	}
 
 	@Test
+	@DisplayName("schedule(Callable)")
 	def scheduleCallable : void {
 		var run = typeof(Callable).mock
 		
 		var future = this.service.schedule(this.logger, 34, TimeUnit::DAYS, run)
 		
 		future.assertNotNull
-		verifyZeroInteractions(run)
+		verifyNoInteractions(run)
 		
 		var tasks = this.service.scheduledTasks
 		tasks.assertNotNull
@@ -252,17 +240,18 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 
 		tasks = this.service.scheduledTasks
 		tasks.empty.assertTrue
-		verifyZeroInteractions(this.logger)
+		verifyNoInteractions(this.logger)
 	}
 
 	@Test
+	@DisplayName("schedule(Callable) with exception")
 	def scheduleCallable_exception : void {
 		var run = new FailingCallable().spy
 		
 		var future = this.service.schedule(this.logger, 34, TimeUnit::DAYS, run)
 		
 		future.assertNotNull
-		verifyZeroInteractions(run)
+		verifyNoInteractions(run)
 		
 		var tasks = this.service.scheduledTasks
 		tasks.assertNotNull
@@ -277,21 +266,22 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		tasks = this.service.scheduledTasks
 		tasks.empty.assertTrue
 
-		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
-		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		var capturedLevel = typeof(Level).forClass
+		var capturedException = typeof(Throwable).forClass
 		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
 		Level::SEVERE.assertSame(capturedLevel.value)
 		run.exception.assertSame(capturedException.value)
 	}
 
 	@Test
+	@DisplayName("scheduleAtFixedRate(Runnable)")
 	def scheduleAtFixedRate : void {
 		var run = typeof(Runnable).mock
 		
 		var future = this.service.scheduleAtFixedRate(this.logger, 34, 4, TimeUnit::DAYS, run)
 		
 		future.assertNotNull
-		verifyZeroInteractions(run)
+		verifyNoInteractions(run)
 		
 		var tasks = this.service.scheduledTasks
 		tasks.assertNotNull
@@ -309,17 +299,18 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		future.assertSame(tasks.get(0))
 		3283200000l.assertEquals(tasks.get(0).time as long)
 
-		verifyZeroInteractions(this.logger);
+		verifyNoInteractions(this.logger);
 	}
 
 	@Test
+	@DisplayName("scheduleAtFixedRate(Runnable) with exception")
 	def scheduleAtFixedRate_exception : void {
 		var run = new FailingRunnable().spy
 		
 		var future = this.service.scheduleAtFixedRate(this.logger, 34, 4, TimeUnit::DAYS, run)
 		
 		future.assertNotNull
-		verifyZeroInteractions(run)
+		verifyNoInteractions(run)
 		
 		var tasks = this.service.scheduledTasks
 		tasks.assertNotNull
@@ -334,21 +325,22 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		tasks = this.service.scheduledTasks
 		tasks.empty.assertTrue
 
-		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
-		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		var capturedLevel = typeof(Level).forClass
+		var capturedException = typeof(Throwable).forClass
 		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
 		Level::SEVERE.assertSame(capturedLevel.value)
 		run.exception.assertSame(capturedException.value)
 	}
 
 	@Test
+	@DisplayName("scheduleAtFixedDelay(Runnable)")
 	def scheduleWithFixedDelay : void {
 		var run = typeof(Runnable).mock
 		
 		var future = this.service.scheduleWithFixedDelay(this.logger, 34, 4, TimeUnit::DAYS, run)
 		
 		future.assertNotNull
-		verifyZeroInteractions(run)
+		verifyNoInteractions(run)
 		
 		var tasks = this.service.scheduledTasks
 		tasks.assertNotNull
@@ -366,17 +358,18 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		future.assertSame(tasks.get(0))
 		3283200000l.assertEquals(tasks.get(0).time as long)
 
-		verifyZeroInteractions(this.logger)
+		verifyNoInteractions(this.logger)
 	}
 
 	@Test
+	@DisplayName("scheduleAtFixedDelay(Runnable) with exception")
 	def scheduleWithFixedDelay_exception : void {
 		var run = new FailingRunnable().spy
 		
 		var future = this.service.scheduleWithFixedDelay(this.logger, 34, 4, TimeUnit::DAYS, run)
 		
 		future.assertNotNull
-		verifyZeroInteractions(run)
+		verifyNoInteractions(run)
 		
 		var tasks = this.service.scheduledTasks
 		tasks.assertNotNull
@@ -391,8 +384,8 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		tasks = this.service.scheduledTasks
 		tasks.empty.assertTrue
 
-		var capturedLevel = ArgumentCaptor::forClass(typeof(Level))
-		var capturedException = ArgumentCaptor::forClass(typeof(Throwable))
+		var capturedLevel = typeof(Level).forClass
+		var capturedException = typeof(Throwable).forClass
 		this.logger.verify(1.times).log(capturedLevel.capture, any, capturedException.capture)
 		Level::SEVERE.assertSame(capturedLevel.value)
 		run.exception.assertSame(capturedException.value)

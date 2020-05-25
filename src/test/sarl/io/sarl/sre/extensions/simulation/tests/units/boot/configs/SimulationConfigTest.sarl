@@ -23,12 +23,18 @@ package io.sarl.sre.extensions.simulation.tests.units.boot.configs
 
 import io.bootique.config.ConfigurationFactory
 import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
-import io.sarl.tests.api.AbstractSarlTest
+import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 import io.sarl.tests.api.Nullable
-import org.junit.Before
-import org.junit.Test
-import org.mockito.ArgumentCaptor
+import io.sarl.tests.api.extensions.ContextInitExtension
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.^extension.ExtendWith
 
+import static extension org.junit.jupiter.api.Assertions.*
+import static extension org.mockito.ArgumentCaptor.*
 import static extension org.mockito.ArgumentMatchers.*
 import static extension org.mockito.Mockito.*
 
@@ -38,42 +44,68 @@ import static extension org.mockito.Mockito.*
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SuppressWarnings("all")
-class SimulationKernelFactoryTest extends AbstractSarlTest {
+@ExtendWith(#[
+	typeof(ContextInitExtension),
+	typeof(JavaVersionCheckExtension),
+	typeof(PropertyRestoreExtension)
+])
+@DisplayName("unit: SimulationConfig test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+class SimulationConfigTest {
 
 	@Nullable
 	var config : SimulationConfig
 	
-	@Before
+	@BeforeEach
 	def setUp : void {
 		this.config = new SimulationConfig
 	}
 	
 	@Test
+	@DisplayName("getConfiguration (static)")
 	def getConfiguration : void {
 		var factory = typeof(ConfigurationFactory).mock
 		var cfg = typeof(SimulationConfig).mock
 		when(factory.config(typeof(Class).any, anyString)).thenReturn(cfg)
 		cfg.assertSame(SimulationConfig::getConfiguration(factory))
-		var arg0 = ArgumentCaptor::forClass(typeof(Class))
-		var arg1 = ArgumentCaptor::forClass(typeof(String))
+		var arg0 = typeof(Class).forClass
+		var arg1 = typeof(String).forClass
 		factory.verify(only).config(arg0.capture, arg1.capture)
 		typeof(SimulationConfig).assertEquals(arg0.value)
 		SimulationConfig::PREFIX.assertEquals(arg1.value)
 	}
 
 	@Test
+	@DisplayName("isAutostart")
 	def isAutostart : void {
 		this.config.isAutostart.assertTrue
 	}
 
 	@Test
+	@DisplayName("setAutostart")
 	def setAutostart : void {
-		this.config.autostart.assertTrue
 		this.config.autostart = false
 		this.config.autostart.assertFalse
 		this.config.autostart = true
 		this.config.autostart.assertTrue
+	}
+
+	@Test
+	@DisplayName("getLogMessageFormat")
+	def getLogMessageFormat : void {
+		SimulationConfig::LOG_MESSAGE_FORMAT_VALUE.assertEquals(this.config.logMessageFormat)
+	}
+
+	@Test
+	@DisplayName("setLogMessageFormat")
+	def setLogMessageFormat : void {
+		this.config.logMessageFormat = "a"
+		"a".assertEquals(this.config.logMessageFormat)
+		this.config.logMessageFormat = "b"
+		"b".assertEquals(this.config.logMessageFormat)
 	}
 
 }

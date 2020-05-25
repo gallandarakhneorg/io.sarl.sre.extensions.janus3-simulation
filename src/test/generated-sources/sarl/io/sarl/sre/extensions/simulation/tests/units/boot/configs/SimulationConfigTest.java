@@ -25,12 +25,17 @@ import io.sarl.lang.annotation.SarlElementType;
 import io.sarl.lang.annotation.SarlSpecification;
 import io.sarl.lang.annotation.SyntheticMember;
 import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig;
-import io.sarl.tests.api.AbstractSarlTest;
+import io.sarl.sre.test.framework.extension.PropertyRestoreExtension;
 import io.sarl.tests.api.Nullable;
+import io.sarl.tests.api.extensions.ContextInitExtension;
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension;
 import org.eclipse.xtext.xbase.lib.Pure;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -41,46 +46,67 @@ import org.mockito.Mockito;
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SuppressWarnings("all")
-@SarlSpecification("0.10")
+@ExtendWith({ ContextInitExtension.class, JavaVersionCheckExtension.class, PropertyRestoreExtension.class })
+@DisplayName("unit: SimulationConfig test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+@SarlSpecification("0.11")
 @SarlElementType(10)
-public class SimulationKernelFactoryTest extends AbstractSarlTest {
+@SuppressWarnings("all")
+public class SimulationConfigTest {
   @Nullable
   private SimulationConfig config;
   
-  @Before
+  @BeforeEach
   public void setUp() {
     SimulationConfig _simulationConfig = new SimulationConfig();
     this.config = _simulationConfig;
   }
   
   @Test
-  @Pure
+  @DisplayName("getConfiguration (static)")
   public void getConfiguration() {
-    ConfigurationFactory factory = AbstractSarlTest.<ConfigurationFactory>mock(ConfigurationFactory.class);
-    SimulationConfig cfg = AbstractSarlTest.<SimulationConfig>mock(SimulationConfig.class);
+    ConfigurationFactory factory = Mockito.<ConfigurationFactory>mock(ConfigurationFactory.class);
+    SimulationConfig cfg = Mockito.<SimulationConfig>mock(SimulationConfig.class);
     Mockito.<Object>when(factory.<Object>config(ArgumentMatchers.<Class>any(Class.class), ArgumentMatchers.anyString())).thenReturn(cfg);
-    Assert.assertSame(cfg, SimulationConfig.getConfiguration(factory));
+    Assertions.assertSame(cfg, SimulationConfig.getConfiguration(factory));
     ArgumentCaptor<Class> arg0 = ArgumentCaptor.<Class, Class>forClass(Class.class);
     ArgumentCaptor<String> arg1 = ArgumentCaptor.<String, String>forClass(String.class);
     Mockito.<ConfigurationFactory>verify(factory, Mockito.only()).<Object>config(arg0.capture(), arg1.capture());
-    AbstractSarlTest.assertEquals(SimulationConfig.class, arg0.getValue());
-    AbstractSarlTest.assertEquals(SimulationConfig.PREFIX, arg1.getValue());
+    Assertions.assertEquals(SimulationConfig.class, arg0.getValue());
+    Assertions.assertEquals(SimulationConfig.PREFIX, arg1.getValue());
   }
   
   @Test
-  @Pure
+  @DisplayName("isAutostart")
   public void isAutostart() {
-    Assert.assertTrue(this.config.isAutostart());
+    Assertions.assertTrue(this.config.isAutostart());
   }
   
   @Test
+  @DisplayName("setAutostart")
   public void setAutostart() {
-    Assert.assertTrue(this.config.isAutostart());
     this.config.setAutostart(false);
-    Assert.assertFalse(this.config.isAutostart());
+    Assertions.assertFalse(this.config.isAutostart());
     this.config.setAutostart(true);
-    Assert.assertTrue(this.config.isAutostart());
+    Assertions.assertTrue(this.config.isAutostart());
+  }
+  
+  @Test
+  @DisplayName("getLogMessageFormat")
+  public void getLogMessageFormat() {
+    Assertions.assertEquals(SimulationConfig.LOG_MESSAGE_FORMAT_VALUE, this.config.getLogMessageFormat());
+  }
+  
+  @Test
+  @DisplayName("setLogMessageFormat")
+  public void setLogMessageFormat() {
+    this.config.setLogMessageFormat("a");
+    Assertions.assertEquals("a", this.config.getLogMessageFormat());
+    this.config.setLogMessageFormat("b");
+    Assertions.assertEquals("b", this.config.getLogMessageFormat());
   }
   
   @Override
@@ -99,7 +125,7 @@ public class SimulationKernelFactoryTest extends AbstractSarlTest {
   }
   
   @SyntheticMember
-  public SimulationKernelFactoryTest() {
+  public SimulationConfigTest() {
     super();
   }
 }

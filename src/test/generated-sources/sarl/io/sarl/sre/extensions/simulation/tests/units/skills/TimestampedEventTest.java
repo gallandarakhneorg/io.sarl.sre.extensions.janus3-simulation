@@ -24,11 +24,17 @@ import io.sarl.lang.annotation.SarlElementType;
 import io.sarl.lang.annotation.SarlSpecification;
 import io.sarl.lang.annotation.SyntheticMember;
 import io.sarl.sre.extensions.simulation.skills.TimestampedEvent;
-import io.sarl.tests.api.AbstractSarlTest;
+import io.sarl.sre.test.framework.extension.PropertyRestoreExtension;
 import io.sarl.tests.api.Nullable;
+import io.sarl.tests.api.extensions.ContextInitExtension;
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension;
+import io.sarl.tests.api.tools.TestAssertions;
 import org.eclipse.xtext.xbase.lib.Pure;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author $Author: sgalland$
@@ -36,23 +42,28 @@ import org.junit.Test;
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SuppressWarnings("all")
-@SarlSpecification("0.10")
+@ExtendWith({ ContextInitExtension.class, JavaVersionCheckExtension.class, PropertyRestoreExtension.class })
+@DisplayName("unit: TimestampedEvent test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+@SarlSpecification("0.11")
 @SarlElementType(10)
-public class TimestampedEventTest extends AbstractSarlTest {
+@SuppressWarnings("all")
+public class TimestampedEventTest {
   @Nullable
   private TimestampedEvent event;
   
-  @Before
+  @BeforeEach
   public void setUp() {
     TimestampedEvent _timestampedEvent = new TimestampedEvent(123.456);
     this.event = _timestampedEvent;
   }
   
   @Test
-  @Pure
   public void getTimestamp() {
-    AbstractSarlTest.assertEpsilonEquals(123.456, this.event.timestamp);
+    TestAssertions.assertEpsilonEquals(123.456, this.event.timestamp);
   }
   
   @Override

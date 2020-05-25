@@ -32,18 +32,21 @@ import io.sarl.sre.extensions.simulation.services.executor.SynchronousExecutorSe
 import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService;
 import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.sre.services.time.TimeService;
-import io.sarl.sre.tests.testutils.mockito.NativeDoubleArgumentCaptor;
-import io.sarl.tests.api.AbstractSarlTest;
-import io.sarl.util.concurrent.NoReadWriteLock;
+import io.sarl.sre.test.framework.extension.PropertyRestoreExtension;
+import io.sarl.sre.test.framework.mockito.NativeDoubleArgumentCaptor;
+import io.sarl.tests.api.Nullable;
+import io.sarl.tests.api.extensions.ContextInitExtension;
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension;
+import io.sarl.tests.api.tools.TestAssertions;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.logging.Logger;
-import javax.inject.Provider;
-import org.eclipse.xtext.util.internal.Nullable;
 import org.eclipse.xtext.xbase.lib.Pure;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
@@ -56,10 +59,16 @@ import org.mockito.stubbing.OngoingStubbing;
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SuppressWarnings("all")
-@SarlSpecification("0.10")
+@ExtendWith({ ContextInitExtension.class, JavaVersionCheckExtension.class, PropertyRestoreExtension.class })
+@DisplayName("unit: RunnableSynchronousEngine test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+@SarlSpecification("0.11")
 @SarlElementType(10)
-public class RunnableSynchronousEngineTest extends AbstractSarlTest {
+@SuppressWarnings("all")
+public class RunnableSynchronousEngineTest {
   @Nullable
   private RunnableSynchronousEngine engine;
   
@@ -84,43 +93,40 @@ public class RunnableSynchronousEngineTest extends AbstractSarlTest {
   @Nullable
   private Iterable<Agent> agents;
   
-  @Before
+  @BeforeEach
   public void setUp() {
-    this.agentScheduler = AbstractSarlTest.<AgentScheduler>mock(AgentScheduler.class);
+    this.agentScheduler = Mockito.<AgentScheduler>mock(AgentScheduler.class);
     final Answer<Object> _function = (InvocationOnMock it) -> {
       Object _argument = it.<Object>getArgument(0);
       return ((Iterable<? extends Agent>) _argument).iterator();
     };
     Mockito.<Iterator<Agent>>when(this.agentScheduler.schedule(ArgumentMatchers.<Iterable>any(Iterable.class))).thenAnswer(_function);
-    Iterator iterator = AbstractSarlTest.<Iterator>mock(Iterator.class);
+    Iterator iterator = Mockito.<Iterator>mock(Iterator.class);
     Mockito.<Boolean>when(Boolean.valueOf(iterator.hasNext())).thenReturn(Boolean.valueOf(false));
-    this.agents = AbstractSarlTest.<Iterable>mock(Iterable.class);
+    this.agents = Mockito.<Iterable>mock(Iterable.class);
     Mockito.<Iterator<Agent>>when(this.agents.iterator()).thenReturn(iterator);
-    this.timeConfig = AbstractSarlTest.<TimeConfig>mock(TimeConfig.class);
+    this.timeConfig = Mockito.<TimeConfig>mock(TimeConfig.class);
     Mockito.<Double>when(Double.valueOf(this.timeConfig.getStartTime())).thenReturn(Double.valueOf(12.34));
     Mockito.<Double>when(Double.valueOf(this.timeConfig.getTimeStep())).thenReturn(Double.valueOf(90.12));
-    this.lifecycleService = AbstractSarlTest.<SimulationLifecycleService>mock(SimulationLifecycleService.class);
+    this.lifecycleService = Mockito.<SimulationLifecycleService>mock(SimulationLifecycleService.class);
     final AtomicBoolean bool = new AtomicBoolean(true);
     final Answer<Object> _function_1 = (InvocationOnMock it) -> {
       return Boolean.valueOf(bool.getAndSet(false));
     };
     Mockito.<Boolean>when(Boolean.valueOf(this.lifecycleService.hasAgent())).thenAnswer(_function_1);
     Mockito.<Iterable<Agent>>when(this.lifecycleService.getAgents()).thenReturn(this.agents);
-    this.timeService = AbstractSarlTest.<TimeService>mock(TimeService.class);
-    Logger logger = AbstractSarlTest.<Logger>mock(Logger.class);
-    this.loggingService = AbstractSarlTest.<LoggingService>mock(LoggingService.class);
+    this.timeService = Mockito.<TimeService>mock(TimeService.class);
+    Logger logger = Mockito.<Logger>mock(Logger.class);
+    this.loggingService = Mockito.<LoggingService>mock(LoggingService.class);
     Mockito.<Logger>when(this.loggingService.getKernelLogger()).thenReturn(logger);
-    this.externalController = AbstractSarlTest.<SynchronousEngineExternalController>mock(SynchronousEngineExternalController.class);
+    this.externalController = Mockito.<SynchronousEngineExternalController>mock(SynchronousEngineExternalController.class);
     Mockito.<Boolean>when(Boolean.valueOf(this.externalController.isRunning())).thenReturn(Boolean.valueOf(true));
     Mockito.<Boolean>when(Boolean.valueOf(this.externalController.isStopped())).thenReturn(Boolean.valueOf(false));
-    SynchronousExecutorService _mock = AbstractSarlTest.<SynchronousExecutorService>mock(SynchronousExecutorService.class);
-    final Provider<ReadWriteLock> _function_2 = () -> {
-      return NoReadWriteLock.SINGLETON;
-    };
+    SynchronousExecutorService _mock = Mockito.<SynchronousExecutorService>mock(SynchronousExecutorService.class);
     RunnableSynchronousEngine _runnableSynchronousEngine = new RunnableSynchronousEngine(
       this.agentScheduler, this.timeService, this.timeConfig, 
       this.lifecycleService, _mock, 
-      this.loggingService, _function_2, 
+      this.loggingService, 
       this.externalController);
     this.engine = _runnableSynchronousEngine;
   }
@@ -134,30 +140,33 @@ public class RunnableSynchronousEngineTest extends AbstractSarlTest {
   }
   
   @Test
+  @DisplayName("run with delay")
   public void run_delay() {
     this.applyDelay();
     this.engine.run();
     Mockito.<SimulationLifecycleService>verify(this.lifecycleService, Mockito.times(1)).synchronizeAgentList();
     NativeDoubleArgumentCaptor doubleArg = NativeDoubleArgumentCaptor.forPrimitive();
     Mockito.<TimeService>verify(this.timeService, Mockito.times(1)).evolveTimeIfPossible(doubleArg.capture());
-    AbstractSarlTest.assertEpsilonEquals(90.12, doubleArg.getValue());
+    TestAssertions.assertEpsilonEquals(90.12, doubleArg.getValue());
     doubleArg = NativeDoubleArgumentCaptor.forPrimitive();
     Mockito.<TimeService>verify(this.timeService, Mockito.times(1)).setTimeIfPossible(doubleArg.capture());
     double _value = doubleArg.getValue();
-    AbstractSarlTest.assertEpsilonEquals(12.34, _value);
+    TestAssertions.assertEpsilonEquals(12.34, _value);
   }
   
+  @SuppressWarnings("unused_local_variable")
   @Test
+  @DisplayName("run without delay")
   public void run_noDelay() {
     this.applyNoDelay();
     this.engine.run();
     Mockito.<SimulationLifecycleService>verify(this.lifecycleService, Mockito.times(1)).synchronizeAgentList();
     NativeDoubleArgumentCaptor doubleArg = NativeDoubleArgumentCaptor.forPrimitive();
     boolean r = Mockito.<TimeService>verify(this.timeService, Mockito.times(1)).setTimeIfPossible(doubleArg.capture());
-    AbstractSarlTest.assertEpsilonEquals(12.34, doubleArg.getValue());
+    TestAssertions.assertEpsilonEquals(12.34, doubleArg.getValue());
     doubleArg = NativeDoubleArgumentCaptor.forPrimitive();
     Mockito.<TimeService>verify(this.timeService, Mockito.times(1)).evolveTimeIfPossible(doubleArg.capture());
-    AbstractSarlTest.assertEpsilonEquals(90.12, doubleArg.getValue());
+    TestAssertions.assertEpsilonEquals(90.12, doubleArg.getValue());
   }
   
   @Override

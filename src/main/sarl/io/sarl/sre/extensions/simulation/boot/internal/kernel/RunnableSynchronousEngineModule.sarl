@@ -34,8 +34,6 @@ import io.sarl.sre.services.executor.ExecutorService
 import io.sarl.sre.services.lifecycle.LifecycleService
 import io.sarl.sre.services.logging.LoggingService
 import io.sarl.sre.services.time.TimeService
-import java.util.concurrent.locks.ReadWriteLock
-import javax.inject.Provider
 import javax.inject.Singleton
 
 /** 
@@ -59,10 +57,15 @@ class RunnableSynchronousEngineModule extends AbstractModule {
 	def getSynchronousEngine(scheduler : AgentScheduler, timeService : TimeService,
 		simulationConfiguration : SimulationConfig, lifecycleService : LifecycleService,
 		executorService : ExecutorService, logger : LoggingService, 
-		lockProvider : Provider<ReadWriteLock>,
 		controller : SynchronousEngineExternalController) : Runnable {
-		new RunnableSynchronousEngine(scheduler, timeService, simulationConfiguration,
-			lifecycleService, executorService, logger, lockProvider, controller)
+		new RunnableSynchronousEngine(
+			scheduler,
+			timeService,
+			simulationConfiguration,
+			lifecycleService,
+			executorService,
+			logger,
+			controller)
 	}
 
 }

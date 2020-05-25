@@ -27,6 +27,6 @@ package io.sarl.sre.extensions.simulation.tests.units.services.lifecycle
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-package agent MockAgent {
+agent MockAgent {
 	//
 }

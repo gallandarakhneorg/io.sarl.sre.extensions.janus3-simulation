@@ -20,16 +20,17 @@
  */
 package io.sarl.sre.extensions.simulation.kernel
 
-import io.bootique.config.ConfigurationFactory
 import io.sarl.sre.Kernel
+import io.sarl.sre.boot.configs.SreConfig
 import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
 import io.sarl.sre.services.IServiceManager
 import java.lang.Thread.UncaughtExceptionHandler
 import java.util.concurrent.ExecutorService
+import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 import static extension io.sarl.sre.services.executor.Runnables.*
-import javax.inject.Inject
 
 /** 
  * This class represents the Kernel of the SRE simulation platform.
@@ -51,18 +52,20 @@ class SimulationKernel extends Kernel {
 	val synchronousEngine : Runnable
 
 	@Inject
-	new (serviceManager : IServiceManager, exceptionHandler : UncaughtExceptionHandler,
-		@SynchronousEngine engine : Runnable, executorService : ExecutorService,
-		configFactory : ConfigurationFactory) {
-		super(serviceManager, exceptionHandler)
+	new (serviceManager : Provider<IServiceManager>,
+		exceptionHandler : Provider<UncaughtExceptionHandler>,
+		configuration : Provider<SreConfig>,
+		@SynchronousEngine engine : Runnable,
+		executorService : ExecutorService,
+		simulationConfiguration : Provider<SimulationConfig>) {
+		super(serviceManager, exceptionHandler, configuration)
 
 		// TODO Remove the following line when the framework is ready for the release
 		this.logger.warning(Messages::SimulationKernel_0)
 
 		assert engine !== null
 		this.synchronousEngine = engine
-		var cfg = SimulationConfig::getConfiguration(configFactory)
-		if (cfg.autostart) {
+		if (simulationConfiguration.get.autostart) {
 			startKernelAsync(executorService)
 		}
 	}

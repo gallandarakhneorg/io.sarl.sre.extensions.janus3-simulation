@@ -82,10 +82,56 @@ class SimulationConfig {
 	 */
 	public static val ASYNC_VALUE = false
 
+	/** 
+	 * Name of property that contains the format of the logging messages on the simulation platform.
+	 * 
+	 * <p>The format string may contains one of the following elements:<ul>
+	 * <li><code>%1</code>: the date,</li>
+	 * <li><code>%2</code>: the name of the calling function,</li>
+	 * <li><code>%3</code>: the name of the logger,</li>
+	 * <li><code>%4</code>: the logging level,</li>
+	 * <li><code>%5</code>: the message, and</li>
+	 * <li><code>%6</code>: the throwable.</li>
+	 * <li><code>%7</code>: the simulation time.</li>
+	 * </ul>
+	 * 
+	 * @see #LOG_MESSAGE_FORMAT_VALUE
+	 */
+	public static val LOG_MESSAGE_FORMAT_NAME = PREFIX + ".logMessageFormat"
+
+	/** 
+	 * Format of the logging messages on the simulation platform.
+	 * 
+	 * <p>The format string may contains one of the following elements:<ul>
+	 * <li><code>%1</code>: the date,</li>
+	 * <li><code>%2</code>: the name of the calling function,</li>
+	 * <li><code>%3</code>: the name of the logger,</li>
+	 * <li><code>%4</code>: the logging level,</li>
+	 * <li><code>%5</code>: the message, and</li>
+	 * <li><code>%6</code>: the throwable.</li>
+	 * <li><code>%7</code>: the simulation time.</li>
+	 * </ul>
+	 * 
+	 * @see #LOG_MESSAGE_FORMAT_NAME
+	 */
+	public static val LOG_MESSAGE_FORMAT_VALUE = "[%4$s, %1$tl:%1$tM:%1$tS%1$tp, t=%7$.1f, %3$s] %5$s%6$s%n"
+
+	@Accessors(PUBLIC_GETTER)
+	var logMessageFormat = LOG_MESSAGE_FORMAT_VALUE
+
 	@Accessors(PUBLIC_GETTER)
 	var autostart : boolean = AUTOSTART_VALUE
 
 	var timeConfig : TimeConfig
+
+	/** Change the time configuration.
+	 * 
+	 * @param config the time configuration.
+	 */
+	@BQConfigProperty("The format of the log messages.")
+	def setLogMessageFormat(format : String) {
+		this.logMessageFormat = format
+	}
 
 	/** Replies the configuration for the SARL simulation environment.
 	 * 

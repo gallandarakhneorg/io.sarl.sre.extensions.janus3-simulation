@@ -25,27 +25,33 @@ import io.sarl.lang.core.Agent
 import io.sarl.lang.core.DynamicSkillProvider
 import io.sarl.sarlspecification.SarlSpecificationChecker
 import io.sarl.sre.KernelScope
+import io.sarl.sre.boot.configs.SreConfig
 import io.sarl.sre.internal.SmartListenerCollection
 import io.sarl.sre.services.context.Context
 import io.sarl.sre.services.context.ExternalContextMemberListener
 import io.sarl.sre.services.executor.ExecutorService
+import io.sarl.sre.services.lifecycle.AgentCreatorProvider
 import io.sarl.sre.services.lifecycle.InjectionBasedLifecycleService
 import io.sarl.sre.services.lifecycle.LifecycleServiceListener
+import io.sarl.sre.services.lifecycle.Messages
 import io.sarl.sre.services.lifecycle.SkillUninstaller
-import io.sarl.sre.services.lifecycle.SpawnResult
 import io.sarl.sre.services.logging.LoggingService
 import java.util.ArrayList
 import java.util.Collections
+import java.util.Iterator
 import java.util.List
 import java.util.UUID
 import java.util.concurrent.locks.ReadWriteLock
-import java.util.logging.Level
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
-import io.sarl.sre.services.lifecycle.AgentCreatorProvider
+import org.eclipse.xtext.xbase.lib.Functions.Function0
 
-/**
+import static io.sarl.sre.services.lifecycle.AgentLife.*
+import static java.text.MessageFormat.*
+
+/** 
  * Lifecycle service based on simulation.
  * 
  * @author $Author: sgalland$
@@ -72,30 +78,34 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 	/** 
 	 * Constructs the service with the given (injected) injector.
 	 * 
-	 * @param injector
-	 * the injector that should be used by this service for creating the agents.
+	 * @param injector the injector that should be used by this service for creating the agents.
 	 * @param sarlSpecificationChecker the tool for checking the validity of the SARL specification supported by
 	 * the agents to launch.
 	 * @param skillProvider the provider of skills that should be used to init the agents.
 	 * @param globalListeners is the collection of global listeners to use.
-	 * @param lockProvider the provider of locks.
 	 * @param lifecycleListener the listener at the platform scale on life cycle events.
 	 * @param externalContextListener the listener at the platform scale on context membership events.
 	 * @param skillUninstaller the object this is able to uninstall the skills.
 	 * @param executor the executor service.
 	 * @param logger the logging service.
+	 * @param sreConfig the SRE configuration.
 	 */
 	@Inject
-	new (injector : Injector, sarlSpecificationChecker : SarlSpecificationChecker, skillProvider : DynamicSkillProvider,
-		globalListeners : SmartListenerCollection<?>, lockProvider : Provider<ReadWriteLock>,
+	new (injector : Injector,
+		sarlSpecificationChecker : SarlSpecificationChecker,
+		skillProvider : DynamicSkillProvider,
+		globalListeners : SmartListenerCollection<?>,
 		@KernelScope lifecycleListener : Provider<LifecycleServiceListener>,
-		@KernelScope externalContextListener : Provider<ExternalContextMemberListener>, skillUninstaller : SkillUninstaller,
-		executor : ExecutorService, logger : LoggingService) {
-		super(injector, sarlSpecificationChecker, skillProvider, globalListeners, lockProvider, lifecycleListener,
-			externalContextListener, skillUninstaller, executor, logger)
-		this.lockAdd = getLockProvider.get
-		this.lockDel = getLockProvider.get
-		this.lockRepo = getLockProvider.get
+		@KernelScope externalContextListener : Provider<ExternalContextMemberListener>,
+		skillUninstaller : SkillUninstaller,
+		executor : ExecutorService,
+		logger : LoggingService,
+		sreConfig : SreConfig) {
+		super(injector, sarlSpecificationChecker, skillProvider, globalListeners, lifecycleListener,
+			externalContextListener, skillUninstaller, executor, logger, sreConfig)
+		this.lockAdd = new ReentrantReadWriteLock
+		this.lockDel = new ReentrantReadWriteLock
+		this.lockRepo = new ReentrantReadWriteLock
 	}
 
 	/** 
@@ -105,33 +115,40 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 	 * the agents to launch.
 	 * @param creator the provider of agent creators that is used when spawning agents.
 	 * @param globalListeners is the collection of global listeners to use.
-	 * @param lockProvider the provider of locks.
 	 * @param lifecycleListener the listener at the platform scale on life cycle events.
 	 * @param externalContextListener the listener at the platform scale on context membership events.
 	 * @param skillUninstaller the object this is able to uninstall the skills.
 	 * @param executor the executor service.
 	 * @param logger the logging service.
+	 * @param sreConfig the SRE configuration.
 	 */
-	new (sarlSpecificationChecker : SarlSpecificationChecker, creator : AgentCreatorProvider,
-		globalListeners : SmartListenerCollection<?>, lockProvider : Provider<ReadWriteLock>,
+	new (sarlSpecificationChecker : SarlSpecificationChecker,
+		creator : AgentCreatorProvider,
+		globalListeners : SmartListenerCollection<?>,
 		lifecycleListener : Provider<LifecycleServiceListener>,
-		externalContextListener : Provider<ExternalContextMemberListener>, skillUninstaller : SkillUninstaller,
-		executor : ExecutorService, logger : LoggingService) {
-		super(sarlSpecificationChecker, creator, globalListeners, lockProvider, lifecycleListener,
-			externalContextListener, skillUninstaller, executor, logger)
-		this.lockAdd = getLockProvider.get
-		this.lockDel = getLockProvider.get
-		this.lockRepo = getLockProvider.get
+		externalContextListener : Provider<ExternalContextMemberListener>,
+		skillUninstaller : SkillUninstaller,
+		executor : ExecutorService,
+		logger : LoggingService,
+		sreConfig : SreConfig) {
+		super(sarlSpecificationChecker, creator, globalListeners, lifecycleListener,
+			externalContextListener, skillUninstaller, executor, logger, sreConfig.services.lifecycle)
+		this.lockAdd = new ReentrantReadWriteLock 
+		this.lockDel = new ReentrantReadWriteLock
+		this.lockRepo = new ReentrantReadWriteLock
 	}
 
-	override spawnAgent(nbAgents : int, spawningAgent : UUID, parent : Context, agentId : UUID,
-			agentClazz : Class<? extends Agent>, params : Object*) : SpawnResult {
+	protected override spawnAgent(nbAgents : int,
+		spawningAgent : UUID,
+		parent : Context,
+		agentClazz : Class<? extends Agent>,
+		params : Object[],
+		agentIds : ()=>UUID) : void {
 		val ids = new ArrayList(nbAgents)
 		if (nbAgents > 0) {
-			if (agentId !== null) {
-				ids += agentId
-				for (var i = 1; i < nbAgents; i++) {
-					ids += UUID::randomUUID
+			if (agentIds !== null) {
+				for (var i = 0; i < nbAgents; i++) {
+					ids += agentIds.apply
 				}
 			} else {
 				for (var i = 0; i < nbAgents; i++) {
@@ -149,22 +166,33 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 				this.lockAdd.writeLock.unlock
 			}
 		}
-		return new SpawnResult(ids, Collections::emptyList)
 	}
 
-	override killAgent(^agent : Agent) : boolean {
+	override killAgent(^agent : Agent, forceKillable : boolean) : boolean {
 		assert ^agent !== null
-		if (^agent.isKillableAgent) {
-			this.lockDel.writeLock.lock
-			try {
-				if (this.agentsToRemove === null) {
-					this.agentsToRemove = newLinkedList
+		val agentId = ^agent.ID
+		val life = getLifeOrNull(^agent)
+		if (life !== null && life.isAlive) {
+			if (forceKillable || life.isKillableAgent(agentId)) {
+				this.lockDel.writeLock.lock
+				try {
+					if (this.agentsToRemove === null) {
+						this.agentsToRemove = newLinkedList
+					}
+					this.agentsToRemove += ^agent
+				} finally {
+					this.lockDel.writeLock.unlock
 				}
-				this.agentsToRemove += ^agent
-			} finally {
-				this.lockDel.writeLock.unlock
-			} 
-			return true
+				return true
+			} else {
+				this.loggingService.kernelLogger.warning [
+					format(Messages::AbstractLifecycleService_1, agentId)
+				]
+			}
+		} else {
+			this.loggingService.kernelLogger.warning [
+				format(Messages::AbstractLifecycleService_2, agentId)
+			]
 		}
 		return false
 	}
@@ -207,17 +235,8 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 			}
 			if (addedAgents !== null) {
 				for (query : addedAgents) {
-					var result = spawnAgent(query.agentId.size, query.spawningAgent, query.parent, query.agentClazz,
-						query.params) [
-						assert it >= 0
-						if (it < query.agentId.size) {
-							return query.agentId.get(it)
-						}
-						return UUID::randomUUID
-					]
-					if (result.error !== null) {
-						loggingService.kernelLogger.log(Level::SEVERE, result.error.localizedMessage, result.error)
-					}
+					spawnAgent(query.agentId.size, query.spawningAgent, query.parent, query.agentClazz,
+						query.params, new AgentIdsProvider(query.agentId))
 				}
 			}
 		}
@@ -238,7 +257,7 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 			}
 			if (removedAgents !== null) {
 				for (^agent : removedAgents) {
-					super.killAgent(^agent)
+					super.killAgent(^agent, false)
 				}
 			}
 		}
@@ -302,6 +321,35 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 
 		override toString : String {
 			return this.agentClazz.name
+		}
+
+	}
+
+	/** 
+	 * A dynamic provider of UUID for the newly created agents.
+	 * 
+	 * @author $Author: sgalland$
+	 * @version $FullVersion$
+	 * @mavengroupid $GroupId$
+	 * @mavenartifactid $ArtifactId$
+	 * @since 0.11
+	 */
+	protected static class AgentIdsProvider implements Function0<UUID> {
+
+		val agentIds : Iterator<UUID>
+
+		new (agentIds : List<UUID>) {
+			this.agentIds = agentIds.iterator
+		}
+
+		synchronized def apply : UUID {
+			if (this.agentIds.hasNext) {
+				val id = this.agentIds.next
+				if (id !== null) {
+					return id
+				}
+			}
+			return UUID::randomUUID
 		}
 
 	}

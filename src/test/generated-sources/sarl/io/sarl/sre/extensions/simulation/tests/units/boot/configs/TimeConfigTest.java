@@ -24,13 +24,19 @@ import io.sarl.lang.annotation.SarlElementType;
 import io.sarl.lang.annotation.SarlSpecification;
 import io.sarl.lang.annotation.SyntheticMember;
 import io.sarl.sre.extensions.simulation.boot.configs.TimeConfig;
-import io.sarl.tests.api.AbstractSarlTest;
+import io.sarl.sre.test.framework.extension.PropertyRestoreExtension;
 import io.sarl.tests.api.Nullable;
+import io.sarl.tests.api.extensions.ContextInitExtension;
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension;
+import io.sarl.tests.api.tools.TestAssertions;
 import java.util.concurrent.TimeUnit;
 import org.eclipse.xtext.xbase.lib.Pure;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author $Author: sgalland$
@@ -38,72 +44,82 @@ import org.junit.Test;
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SuppressWarnings("all")
-@SarlSpecification("0.10")
+@ExtendWith({ ContextInitExtension.class, JavaVersionCheckExtension.class, PropertyRestoreExtension.class })
+@DisplayName("unit: TimeConfig test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+@SarlSpecification("0.11")
 @SarlElementType(10)
-public class TimeFactoryTest extends AbstractSarlTest {
+@SuppressWarnings("all")
+public class TimeConfigTest {
   @Nullable
   private TimeConfig config;
   
-  @Before
+  @BeforeEach
   public void setUp() {
     TimeConfig _timeConfig = new TimeConfig();
     this.config = _timeConfig;
   }
   
   @Test
-  @Pure
+  @DisplayName("getStartStep")
   public void getTimeStep() {
-    AbstractSarlTest.assertEpsilonEquals(TimeConfig.TIME_STEP_VALUE, this.config.getTimeStep());
+    TestAssertions.assertEpsilonEquals(TimeConfig.TIME_STEP_VALUE, this.config.getTimeStep());
   }
   
   @Test
+  @DisplayName("setStartStep")
   public void setTimeStep() {
-    AbstractSarlTest.assertEpsilonEquals(TimeConfig.TIME_STEP_VALUE, this.config.getTimeStep());
+    TestAssertions.assertEpsilonEquals(TimeConfig.TIME_STEP_VALUE, this.config.getTimeStep());
     this.config.setTimeStep(123.456);
-    AbstractSarlTest.assertEpsilonEquals(123.456, this.config.getTimeStep());
+    TestAssertions.assertEpsilonEquals(123.456, this.config.getTimeStep());
   }
   
   @Test
-  @Pure
+  @DisplayName("getStartTime")
   public void getStartTime() {
-    AbstractSarlTest.assertEpsilonEquals(TimeConfig.START_TIME_VALUE, this.config.getStartTime());
+    TestAssertions.assertEpsilonEquals(TimeConfig.START_TIME_VALUE, this.config.getStartTime());
   }
   
   @Test
+  @DisplayName("setStartTime")
   public void setStartTime() {
-    AbstractSarlTest.assertEpsilonEquals(TimeConfig.START_TIME_VALUE, this.config.getStartTime());
+    TestAssertions.assertEpsilonEquals(TimeConfig.START_TIME_VALUE, this.config.getStartTime());
     this.config.setStartTime(123.456);
-    AbstractSarlTest.assertEpsilonEquals(123.456, this.config.getStartTime());
+    TestAssertions.assertEpsilonEquals(123.456, this.config.getStartTime());
   }
   
   @Test
-  @Pure
+  @DisplayName("getSimulationLoopDelay")
   public void getSimulationLoopDelay() {
-    Assert.assertEquals(TimeConfig.SIMULATION_LOOP_STEP_DELAY_VALUE, this.config.getSimulationLoopDelay());
+    Assertions.assertEquals(TimeConfig.SIMULATION_LOOP_STEP_DELAY_VALUE, this.config.getSimulationLoopDelay());
   }
   
   @Test
+  @DisplayName("setSimulationLoopDelay")
   public void setSimulationLoopDelay() {
-    Assert.assertEquals(TimeConfig.SIMULATION_LOOP_STEP_DELAY_VALUE, this.config.getSimulationLoopDelay());
+    Assertions.assertEquals(TimeConfig.SIMULATION_LOOP_STEP_DELAY_VALUE, this.config.getSimulationLoopDelay());
     this.config.setSimulationLoopDelay(123456);
-    Assert.assertEquals(123456l, this.config.getSimulationLoopDelay());
+    Assertions.assertEquals(123456l, this.config.getSimulationLoopDelay());
   }
   
   @Test
-  @Pure
+  @DisplayName("getUnit")
   public void getUnit() {
-    AbstractSarlTest.assertEquals(TimeUnit.SECONDS, this.config.getUnit());
+    Assertions.assertEquals(TimeUnit.SECONDS, this.config.getUnit());
   }
   
   @Test
+  @DisplayName("setUnit")
   public void setUnit() {
-    AbstractSarlTest.assertEquals(TimeUnit.SECONDS, this.config.getUnit());
+    Assertions.assertEquals(TimeUnit.SECONDS, this.config.getUnit());
     TimeUnit[] _values = TimeUnit.values();
     for (final TimeUnit tu : _values) {
       {
         this.config.setUnit(tu);
-        Assert.assertSame(tu, this.config.getUnit());
+        Assertions.assertSame(tu, this.config.getUnit());
       }
     }
   }
@@ -124,7 +140,7 @@ public class TimeFactoryTest extends AbstractSarlTest {
   }
   
   @SyntheticMember
-  public TimeFactoryTest() {
+  public TimeConfigTest() {
     super();
   }
 }

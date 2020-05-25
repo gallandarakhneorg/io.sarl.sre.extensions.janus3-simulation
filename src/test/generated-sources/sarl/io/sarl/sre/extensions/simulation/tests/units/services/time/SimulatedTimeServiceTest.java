@@ -34,15 +34,21 @@ import io.sarl.sre.internal.SmartListenerCollection;
 import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.sre.services.time.TimeListener;
 import io.sarl.sre.services.time.TimeService;
-import io.sarl.tests.api.AbstractSarlTest;
+import io.sarl.sre.test.framework.extension.PropertyRestoreExtension;
 import io.sarl.tests.api.Nullable;
+import io.sarl.tests.api.extensions.ContextInitExtension;
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension;
+import io.sarl.tests.api.tools.TestAssertions;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import javax.inject.Inject;
 import org.eclipse.xtext.xbase.lib.Pure;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -52,11 +58,17 @@ import org.mockito.Mockito;
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SarlSpecification("0.10")
+@ExtendWith({ ContextInitExtension.class, JavaVersionCheckExtension.class, PropertyRestoreExtension.class })
+@DisplayName("unit: SimulatedTimeService test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+@SarlSpecification("0.11")
 @SarlElementType(10)
 @SuppressWarnings("all")
-public class SimulatedTimeServiceTest extends AbstractSarlTest {
-  @SarlSpecification("0.10")
+public class SimulatedTimeServiceTest {
+  @SarlSpecification("0.11")
   @SarlElementType(10)
   private static class MyTimeService extends SimulatedTimeService {
     private long ostime = 1500l;
@@ -116,14 +128,14 @@ public class SimulatedTimeServiceTest extends AbstractSarlTest {
   @Nullable
   private TimeConfig config;
   
-  @Before
+  @BeforeEach
   public void setUp() {
-    this.logger = AbstractSarlTest.<LoggingService>mock(LoggingService.class);
-    Mockito.<Logger>when(this.logger.getKernelLogger()).thenReturn(AbstractSarlTest.<Logger>mock(Logger.class));
-    this.config = AbstractSarlTest.<TimeConfig>mock(TimeConfig.class);
+    this.logger = Mockito.<LoggingService>mock(LoggingService.class);
+    Mockito.<Logger>when(this.logger.getKernelLogger()).thenReturn(Mockito.<Logger>mock(Logger.class));
+    this.config = Mockito.<TimeConfig>mock(TimeConfig.class);
     Mockito.<Boolean>when(Boolean.valueOf(this.config.isTimeProgressionInLogs())).thenReturn(Boolean.valueOf(false));
     Mockito.<TimeUnit>when(this.config.getUnit()).thenReturn(TimeUnit.SECONDS);
-    this.listener = AbstractSarlTest.<TimeListener>mock(TimeListener.class);
+    this.listener = Mockito.<TimeListener>mock(TimeListener.class);
     SequenceListenerNotifier _sequenceListenerNotifier = new SequenceListenerNotifier();
     final SmartListenerCollection<TimeListener> coll = new SmartListenerCollection<TimeListener>(_sequenceListenerNotifier);
     SimulatedTimeServiceTest.MyTimeService _myTimeService = new SimulatedTimeServiceTest.MyTimeService(this.logger, this.config, coll);
@@ -132,39 +144,40 @@ public class SimulatedTimeServiceTest extends AbstractSarlTest {
   }
   
   @Test
-  @Pure
+  @DisplayName("getTime before time evolution")
   public void getTime_beforeEvolution() {
-    AbstractSarlTest.assertEpsilonEquals(0.0, this.service.getTime(TimeUnit.MINUTES));
-    AbstractSarlTest.assertEpsilonEquals(0.0, this.service.getTime(TimeUnit.SECONDS));
-    AbstractSarlTest.assertEpsilonEquals(0.0, this.service.getTime(TimeUnit.MILLISECONDS));
-    Mockito.verifyZeroInteractions(this.listener);
+    TestAssertions.assertEpsilonEquals(0.0, this.service.getTime(TimeUnit.MINUTES));
+    TestAssertions.assertEpsilonEquals(0.0, this.service.getTime(TimeUnit.SECONDS));
+    TestAssertions.assertEpsilonEquals(0.0, this.service.getTime(TimeUnit.MILLISECONDS));
+    Mockito.verifyNoInteractions(this.listener);
   }
   
   @Test
-  @Pure
+  @DisplayName("getTime after time evolution")
   public void getTime_afterEvolution() {
     this.service.evolveTimeIfPossible(4);
-    AbstractSarlTest.assertEpsilonEquals(0.066, this.service.getTime(TimeUnit.MINUTES));
-    AbstractSarlTest.assertEpsilonEquals(4, this.service.getTime(TimeUnit.SECONDS));
-    AbstractSarlTest.assertEpsilonEquals(4000.0, this.service.getTime(TimeUnit.MILLISECONDS));
+    TestAssertions.assertEpsilonEquals(0.066, this.service.getTime(TimeUnit.MINUTES));
+    TestAssertions.assertEpsilonEquals(4, this.service.getTime(TimeUnit.SECONDS));
+    TestAssertions.assertEpsilonEquals(4000.0, this.service.getTime(TimeUnit.MILLISECONDS));
     ArgumentCaptor<TimeService> serviceCaptor = ArgumentCaptor.<TimeService, TimeService>forClass(TimeService.class);
     Mockito.<TimeListener>verify(this.listener, Mockito.times(1)).timeChanged(serviceCaptor.capture());
-    Assert.assertSame(this.service, serviceCaptor.getValue());
+    Assertions.assertSame(this.service, serviceCaptor.getValue());
   }
   
   @Test
-  @Pure
+  @DisplayName("getOSTimeFactor before time evolution")
   public void getOSTimeFactor_beforeEvolution() {
-    AbstractSarlTest.assertEpsilonEquals(1.0, this.service.getOSTimeFactor());
-    Mockito.verifyZeroInteractions(this.listener);
+    TestAssertions.assertEpsilonEquals(1.0, this.service.getOSTimeFactor());
+    Mockito.verifyNoInteractions(this.listener);
   }
   
   @Test
+  @DisplayName("evolveTimeIfPossible")
   public void evolveTimeIfPossible() {
     this.service.evolveTimeIfPossible(15);
     ArgumentCaptor<TimeService> serviceCaptor = ArgumentCaptor.<TimeService, TimeService>forClass(TimeService.class);
     Mockito.<TimeListener>verify(this.listener).timeChanged(serviceCaptor.capture());
-    Assert.assertSame(this.service, serviceCaptor.getValue());
+    Assertions.assertSame(this.service, serviceCaptor.getValue());
   }
   
   @Override

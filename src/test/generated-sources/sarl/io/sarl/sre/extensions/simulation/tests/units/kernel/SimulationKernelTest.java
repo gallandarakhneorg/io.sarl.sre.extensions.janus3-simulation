@@ -22,10 +22,10 @@ package io.sarl.sre.extensions.simulation.tests.units.kernel;
 
 import com.google.common.base.Objects;
 import com.google.common.util.concurrent.Service;
-import io.bootique.config.ConfigurationFactory;
 import io.sarl.lang.annotation.SarlElementType;
 import io.sarl.lang.annotation.SarlSpecification;
 import io.sarl.lang.annotation.SyntheticMember;
+import io.sarl.sre.boot.configs.SreConfig;
 import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig;
 import io.sarl.sre.extensions.simulation.kernel.SimulationKernel;
 import io.sarl.sre.services.IServiceManager;
@@ -33,14 +33,21 @@ import io.sarl.sre.services.context.ContextService;
 import io.sarl.sre.services.executor.SreKernelRunnable;
 import io.sarl.sre.services.lifecycle.LifecycleService;
 import io.sarl.sre.services.logging.LoggingService;
-import io.sarl.tests.api.AbstractSarlTest;
+import io.sarl.sre.test.framework.extension.PropertyRestoreExtension;
 import io.sarl.tests.api.Nullable;
+import io.sarl.tests.api.extensions.ContextInitExtension;
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension;
+import io.sarl.tests.api.tools.TestAssertions;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Logger;
+import javax.inject.Provider;
 import org.eclipse.xtext.xbase.lib.Pure;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
@@ -53,10 +60,16 @@ import org.mockito.stubbing.Answer;
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SuppressWarnings("all")
-@SarlSpecification("0.10")
+@ExtendWith({ ContextInitExtension.class, JavaVersionCheckExtension.class, PropertyRestoreExtension.class })
+@DisplayName("unit: RunnableSynchronousEngine test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+@SarlSpecification("0.11")
 @SarlElementType(10)
-public class SimulationKernelTest extends AbstractSarlTest {
+@SuppressWarnings("all")
+public class SimulationKernelTest {
   @Nullable
   private IServiceManager serviceManager;
   
@@ -68,9 +81,6 @@ public class SimulationKernelTest extends AbstractSarlTest {
   
   @Nullable
   private ExecutorService executorService;
-  
-  @Nullable
-  private ConfigurationFactory configurationFactory;
   
   @Nullable
   private SimulationKernel kernel;
@@ -87,14 +97,17 @@ public class SimulationKernelTest extends AbstractSarlTest {
   @Nullable
   private SimulationConfig simulationConfig;
   
-  @Before
+  @Nullable
+  private SreConfig sreConfig;
+  
+  @BeforeEach
   public void setUp() {
-    this.logging = AbstractSarlTest.<LoggingService>mock(LoggingService.class);
-    Mockito.<Logger>when(this.logging.getKernelLogger()).thenReturn(AbstractSarlTest.<Logger>mock(Logger.class));
-    Mockito.<Logger>when(this.logging.getPlatformLogger()).thenReturn(AbstractSarlTest.<Logger>mock(Logger.class));
-    this.lifecycle = AbstractSarlTest.<LifecycleService>mock(LifecycleService.class);
-    this.context = AbstractSarlTest.<ContextService>mock(ContextService.class);
-    this.serviceManager = AbstractSarlTest.<IServiceManager>mock(IServiceManager.class);
+    this.logging = Mockito.<LoggingService>mock(LoggingService.class);
+    Mockito.<Logger>when(this.logging.getKernelLogger()).thenReturn(Mockito.<Logger>mock(Logger.class));
+    Mockito.<Logger>when(this.logging.getPlatformLogger()).thenReturn(Mockito.<Logger>mock(Logger.class));
+    this.lifecycle = Mockito.<LifecycleService>mock(LifecycleService.class);
+    this.context = Mockito.<ContextService>mock(ContextService.class);
+    this.serviceManager = Mockito.<IServiceManager>mock(IServiceManager.class);
     final Answer<Object> _function = (InvocationOnMock it) -> {
       Object _argument = it.<Object>getArgument(0);
       Class<?> type = ((Class<?>) _argument);
@@ -113,28 +126,43 @@ public class SimulationKernelTest extends AbstractSarlTest {
       throw new IllegalStateException();
     };
     Mockito.<Service>when(this.serviceManager.<Service>getService(ArgumentMatchers.<Class>any(Class.class))).thenAnswer(_function);
-    this.exceptionHandler = AbstractSarlTest.<Thread.UncaughtExceptionHandler>mock(Thread.UncaughtExceptionHandler.class);
-    this.engine = AbstractSarlTest.<Runnable>mock(Runnable.class);
-    this.executorService = AbstractSarlTest.<ExecutorService>mock(ExecutorService.class);
-    this.simulationConfig = AbstractSarlTest.<SimulationConfig>mock(SimulationConfig.class);
-    this.configurationFactory = AbstractSarlTest.<ConfigurationFactory>mock(ConfigurationFactory.class);
-    Mockito.<Object>when(this.configurationFactory.<Object>config(ArgumentMatchers.<Class>any(Class.class), ArgumentMatchers.anyString())).thenReturn(this.simulationConfig);
-    SimulationKernel _simulationKernel = new SimulationKernel(this.serviceManager, this.exceptionHandler, 
-      this.engine, this.executorService, this.configurationFactory);
+    this.exceptionHandler = Mockito.<Thread.UncaughtExceptionHandler>mock(Thread.UncaughtExceptionHandler.class);
+    this.engine = Mockito.<Runnable>mock(Runnable.class);
+    this.executorService = Mockito.<ExecutorService>mock(ExecutorService.class);
+    this.simulationConfig = Mockito.<SimulationConfig>mock(SimulationConfig.class);
+    this.sreConfig = Mockito.<SreConfig>mock(SreConfig.class);
+    final Provider<IServiceManager> _function_1 = () -> {
+      return this.serviceManager;
+    };
+    final Provider<Thread.UncaughtExceptionHandler> _function_2 = () -> {
+      return this.exceptionHandler;
+    };
+    final Provider<SreConfig> _function_3 = () -> {
+      return this.sreConfig;
+    };
+    final Provider<SimulationConfig> _function_4 = () -> {
+      return this.simulationConfig;
+    };
+    SimulationKernel _simulationKernel = new SimulationKernel(_function_1, _function_2, _function_3, 
+      this.engine, 
+      this.executorService, _function_4);
     this.kernel = _simulationKernel;
   }
   
   @Test
+  @DisplayName("startKernelAsync")
   public void startKernelAsync() {
     this.kernel.startKernelAsync(this.executorService);
     ArgumentCaptor<Runnable> arg = ArgumentCaptor.<Runnable, Runnable>forClass(Runnable.class);
     Mockito.<ExecutorService>verify(this.executorService, Mockito.times(1)).execute(arg.capture());
     Runnable executedTask = arg.getValue();
-    AbstractSarlTest.assertInstanceOf(SreKernelRunnable.class, executedTask);
-    Assert.assertSame(this.engine, ((SreKernelRunnable) executedTask).getSource());
+    TestAssertions.assertInstanceOf(SreKernelRunnable.class, executedTask);
+    Assertions.assertSame(this.engine, ((SreKernelRunnable) executedTask).getSource());
   }
   
+  @SuppressWarnings("unused_local_variable")
   @Test
+  @DisplayName("startKernelSync")
   public void startKernelSync() {
     this.kernel.startKernelSync();
     ArgumentCaptor<Runnable> arg = ArgumentCaptor.<Runnable, Runnable>forClass(Runnable.class);

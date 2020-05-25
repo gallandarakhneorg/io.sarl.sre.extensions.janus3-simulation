@@ -20,13 +20,12 @@
  */
 package io.sarl.sre.extensions.simulation.services.logging
 
-import io.sarl.sre.services.logging.JulLoggerCreator
+import io.sarl.sre.boot.configs.SreConfig
+import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
+import io.sarl.sre.services.logging.jul.JulLoggerCreator
 import io.sarl.sre.services.time.TimeService
-import java.io.PrintStream
-import java.util.concurrent.locks.ReadWriteLock
 import java.util.logging.Formatter
 import java.util.logging.Level
-import java.util.logging.Logger
 import javax.inject.Provider
 
 /** 
@@ -42,41 +41,26 @@ class SimulationJulLoggerCreator extends JulLoggerCreator {
 
 	val timeProvider : Provider<TimeService>
 
-	val lockProvider : Provider<ReadWriteLock>
-	
+	val simulationConfigProvider : Provider<SimulationConfig>
+
 	/** Build a logger creator.
 	 * 
 	 * @param defaultLevel the logging level for new loggers.
-	 * @param defaultProgramName the default name of the program.
-	 * @param loggerProvider the provider of loggers.
 	 * @param timeProvider the provider of simulation time.
-	 * @param lockProvider the provider of synchronization locks.
-	 * @param formatter the log message formatter to be used.
+	 * @param configProvider the provider of SRE configuration.
+	 * @param simulationConfigProvider the provider of simulation configuration.
 	 */
-	new (defaultLevel : Level, defaultProgramName : String, loggerProvider : Provider<Logger>,
+	new (defaultLevel : Level,
 		timeProvider : Provider<TimeService>,
-		lockProvider : Provider<ReadWriteLock>, 
-		formatter : Formatter = null) {
-		super(defaultLevel, defaultProgramName, loggerProvider, formatter)
+		configProvider : Provider<SreConfig>,
+		simulationConfigProvider : Provider<SimulationConfig>) {
+		super(defaultLevel, configProvider)
 		this.timeProvider = timeProvider
-		this.lockProvider = lockProvider
+		this.simulationConfigProvider = simulationConfigProvider
 	}
 	
-	protected override createFormatter : Formatter {
-		new SimulationFormatter(this.timeProvider, this.lockProvider)
-	}
-
-	override createConsoleLogger(name : String, output : PrintStream) : Logger {
-		var logger = super.createConsoleLogger(name, output)
-		return logger
-	}
-
-	override createPlatformLogger : Logger {
-		super.createPlatformLogger
-	}
-
-	override createModuleLogger(name : String, parent : Logger) : Logger {
-		super.createModuleLogger(name, parent)
+	protected override createPlatformFormatter : Formatter {
+		new SimulationFormatter(this.timeProvider, this.simulationConfigProvider.get.logMessageFormat)
 	}
 
 }

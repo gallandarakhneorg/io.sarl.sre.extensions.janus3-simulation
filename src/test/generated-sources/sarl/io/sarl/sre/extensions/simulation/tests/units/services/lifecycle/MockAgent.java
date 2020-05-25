@@ -35,10 +35,10 @@ import javax.inject.Inject;
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SarlSpecification("0.10")
+@SarlSpecification("0.11")
 @SarlElementType(19)
 @SuppressWarnings("all")
-class MockAgent extends Agent {
+public class MockAgent extends Agent {
   @SyntheticMember
   public MockAgent(final UUID parentID, final UUID agentID) {
     super(parentID, agentID);

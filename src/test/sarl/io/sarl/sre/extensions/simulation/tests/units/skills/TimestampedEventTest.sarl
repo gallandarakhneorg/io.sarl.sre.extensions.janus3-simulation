@@ -22,10 +22,17 @@
 package io.sarl.sre.extensions.simulation.tests.units.skills
 
 import io.sarl.sre.extensions.simulation.skills.TimestampedEvent
-import io.sarl.tests.api.AbstractSarlTest
 import io.sarl.tests.api.Nullable
-import org.junit.Before
-import org.junit.Test
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+
+import static extension io.sarl.tests.api.tools.TestAssertions.*
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Tag
+import org.junit.jupiter.api.^extension.ExtendWith
+import io.sarl.tests.api.extensions.ContextInitExtension
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension
+import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 
 /**
  * @author $Author: sgalland$
@@ -33,13 +40,22 @@ import org.junit.Test
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-@SuppressWarnings("all")
-class TimestampedEventTest extends AbstractSarlTest {
+@ExtendWith(#[
+	typeof(ContextInitExtension),
+	typeof(JavaVersionCheckExtension),
+	typeof(PropertyRestoreExtension)
+])
+@DisplayName("unit: TimestampedEvent test")
+@Tag("unit")
+@Tag("janus")
+@Tag("sre-unit")
+@Tag("sre-simulation")
+class TimestampedEventTest {
 
 	@Nullable
 	var ^event : TimestampedEvent
 
-	@Before
+	@BeforeEach
 	def setUp : void {
 		this.^event = new TimestampedEvent(123.456)
 	}

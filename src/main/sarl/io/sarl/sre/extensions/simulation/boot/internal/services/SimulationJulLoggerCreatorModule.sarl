@@ -26,19 +26,18 @@ import com.google.inject.Module
 import com.google.inject.Provides
 import io.bootique.BQModule
 import io.bootique.BQModuleProvider
-import io.sarl.sre.boot.configs.subconfigs.BootConfig
+import io.sarl.sre.boot.configs.SreConfig
 import io.sarl.sre.boot.internal.services.LoggerCreatorModule
+import io.sarl.sre.extensions.simulation.boot.configs.SimulationConfig
 import io.sarl.sre.extensions.simulation.services.logging.SimulationJulLoggerCreator
-import io.sarl.sre.services.logging.JulLoggerCreator
+import io.sarl.sre.services.logging.jul.JulLoggerCreator
 import io.sarl.sre.services.time.TimeService
 import java.util.Collection
-import java.util.logging.Logger
 import javax.inject.Provider
 import javax.inject.Singleton
 import org.arakhne.afc.bootique.log4j.configs.Log4jIntegrationConfig
 
 import static extension java.util.Collections.*
-import java.util.concurrent.locks.ReadWriteLock
 
 /** 
  * Module for the logger creator that is dedicated to simulation.
@@ -58,22 +57,25 @@ class SimulationJulLoggerCreatorModule extends AbstractModule {
 	/** 
 	 * Replies the creator of loggers.
 	 * 
-	 * @param loggingFactory accessor to the logging bootique factory.
-	 * @param bootFactory accessor to the boot bootique factory.
 	 * @param injector the injector of the members.
-	 * @param loggerProvider the provider of JUL logger.
 	 * @param timeProvider the provider of time service.
-	 * @param lockProvider the provider of synchronization locks.
+	 * @param configProvider the provider of SRE configuration.
+	 * @param simulationConfigProvider the provider of simulation configuration.
 	 * @return the logger creator.
 	 */
 	@Provides
 	@Singleton
-	def provideLoggerCreator(loggingConfig : Log4jIntegrationConfig, bootFactory : BootConfig, injector : Injector,
-		loggerProvider : Provider<Logger>, timeProvider : Provider<TimeService>,
-		lockProvider : Provider<ReadWriteLock>) : JulLoggerCreator {
+	def provideLoggerCreator(
+		loggingConfig : Provider<Log4jIntegrationConfig>,
+		injector : Injector,
+		timeProvider : Provider<TimeService>,
+		configProvider : Provider<SreConfig>,
+		simulationConfigProvider : Provider<SimulationConfig>) : JulLoggerCreator {
 		var creator = new SimulationJulLoggerCreator(
-			loggingConfig.level.toJul,
-			bootFactory.programName, loggerProvider, timeProvider, lockProvider)
+			loggingConfig.get.level.toJul,
+			timeProvider,
+			configProvider,
+			simulationConfigProvider)
 		injector.injectMembers(creator)
 		return creator
 	}
