@@ -64,11 +64,11 @@ import org.mockito.Mockito;
 @Tag("janus")
 @Tag("sre-unit")
 @Tag("sre-simulation")
-@SarlSpecification("0.11")
+@SarlSpecification("0.12")
 @SarlElementType(10)
 @SuppressWarnings("all")
 public class SimulatedTimeServiceTest {
-  @SarlSpecification("0.11")
+  @SarlSpecification("0.12")
   @SarlElementType(10)
   private static class MyTimeService extends SimulatedTimeService {
     private long ostime = 1500l;

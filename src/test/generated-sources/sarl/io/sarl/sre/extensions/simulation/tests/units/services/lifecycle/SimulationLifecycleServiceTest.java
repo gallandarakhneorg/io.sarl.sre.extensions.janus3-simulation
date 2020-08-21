@@ -25,27 +25,16 @@ import io.sarl.lang.annotation.SarlSpecification;
 import io.sarl.lang.annotation.SyntheticMember;
 import io.sarl.lang.core.Agent;
 import io.sarl.sarlspecification.SarlSpecificationChecker;
-import io.sarl.sre.boot.configs.SreConfig;
-import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService;
-import io.sarl.sre.extensions.simulation.tests.units.services.lifecycle.MockAgent;
-import io.sarl.sre.internal.SequenceListenerNotifier;
-import io.sarl.sre.internal.SmartListenerCollection;
+import io.sarl.sre.extensions.simulation.tests.units.services.lifecycle.mocks.AgentMock;
+import io.sarl.sre.extensions.simulation.tests.units.services.lifecycle.mocks.ServiceMock;
 import io.sarl.sre.services.context.Context;
-import io.sarl.sre.services.context.ExternalContextMemberListener;
-import io.sarl.sre.services.executor.ExecutorService;
 import io.sarl.sre.services.lifecycle.AgentCreatorProvider;
-import io.sarl.sre.services.lifecycle.LifecycleServiceListener;
-import io.sarl.sre.services.lifecycle.SkillUninstaller;
-import io.sarl.sre.services.logging.LoggingService;
 import io.sarl.sre.test.framework.extension.PropertyRestoreExtension;
 import io.sarl.tests.api.Nullable;
 import io.sarl.tests.api.extensions.ContextInitExtension;
 import io.sarl.tests.api.extensions.JavaVersionCheckExtension;
-import java.util.EventListener;
 import java.util.Iterator;
 import java.util.UUID;
-import javax.inject.Provider;
-import org.eclipse.xtext.xbase.lib.Functions.Function0;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,56 +57,10 @@ import org.mockito.Mockito;
 @Tag("janus")
 @Tag("sre-unit")
 @Tag("sre-simulation")
-@SarlSpecification("0.11")
+@SarlSpecification("0.12")
 @SarlElementType(10)
 @SuppressWarnings("all")
 public class SimulationLifecycleServiceTest {
-  /**
-   * @author $Author: sgalland$
-   * @version $FullVersion$
-   * @mavengroupid $GroupId$
-   * @mavenartifactid $ArtifactId$
-   */
-  @SarlSpecification("0.11")
-  @SarlElementType(10)
-  public static class MockService extends SimulationLifecycleService {
-    public MockService(final SarlSpecificationChecker sarlSpecificationChecker, final AgentCreatorProvider agentFactoryProvider) {
-      super(sarlSpecificationChecker, agentFactoryProvider, 
-        new SmartListenerCollection<EventListener>(new SequenceListenerNotifier()), 
-        ((Provider<LifecycleServiceListener>) () -> {
-          return Mockito.<LifecycleServiceListener>mock(LifecycleServiceListener.class);
-        }), 
-        ((Provider<ExternalContextMemberListener>) () -> {
-          return Mockito.<ExternalContextMemberListener>mock(ExternalContextMemberListener.class);
-        }), 
-        Mockito.<SkillUninstaller>mock(SkillUninstaller.class), 
-        Mockito.<ExecutorService>mock(ExecutorService.class), 
-        Mockito.<LoggingService>mock(LoggingService.class), 
-        Mockito.<SreConfig>mock(SreConfig.class));
-    }
-    
-    @Override
-    @Pure
-    public boolean canSpawnAgent() {
-      return true;
-    }
-    
-    @Override
-    protected void spawnAgent(final int nbAgents, final UUID spawningAgent, final Context parent, final Class<? extends Agent> agentClazz, final Object[] params, final Function0<? extends UUID> agentIds) {
-      UUID id = agentIds.apply();
-      Assertions.assertNotNull(id);
-      Agent agent = Mockito.<Agent>mock(Agent.class);
-      Mockito.<UUID>when(agent.getID()).thenReturn(id);
-      this.onAgentCreated(agent);
-    }
-    
-    @Override
-    public boolean killAgent(final Agent agent, final boolean forceKillable) {
-      this.onAgentKilled(agent);
-      return true;
-    }
-  }
-  
   @Nullable
   private AgentCreatorProvider agentFactoryProvider;
   
@@ -125,15 +68,15 @@ public class SimulationLifecycleServiceTest {
   private SarlSpecificationChecker checker;
   
   @Nullable
-  private SimulationLifecycleServiceTest.MockService service;
+  private ServiceMock service;
   
   @BeforeEach
   public void setUp() {
     this.agentFactoryProvider = Mockito.<AgentCreatorProvider>mock(AgentCreatorProvider.class);
     this.checker = Mockito.<SarlSpecificationChecker>mock(SarlSpecificationChecker.class);
     Mockito.<Boolean>when(Boolean.valueOf(this.checker.isValidSarlElement(ArgumentMatchers.<Class>any(Class.class)))).thenReturn(Boolean.valueOf(true));
-    SimulationLifecycleServiceTest.MockService _mockService = new SimulationLifecycleServiceTest.MockService(this.checker, this.agentFactoryProvider);
-    this.service = _mockService;
+    ServiceMock _serviceMock = new ServiceMock(this.checker, this.agentFactoryProvider);
+    this.service = _serviceMock;
   }
   
   protected void addAgentMock(final UUID id) {
@@ -141,7 +84,7 @@ public class SimulationLifecycleServiceTest {
       1, 
       UUID.randomUUID(), 
       Mockito.<Context>mock(Context.class), id, 
-      MockAgent.class, 
+      AgentMock.class, 
       new Object[] {});
   }
   

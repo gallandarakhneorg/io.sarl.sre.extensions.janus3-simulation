@@ -19,7 +19,7 @@
  * limitations under the License.
  */
 
-package io.sarl.sre.extensions.simulation.tests.units.services.lifecycle
+package io.sarl.sre.extensions.simulation.tests.units.services.lifecycle.mocks
 
 /**
  * @author $Author: sgalland$
@@ -27,6 +27,6 @@ package io.sarl.sre.extensions.simulation.tests.units.services.lifecycle
  * @mavengroupid $GroupId$
  * @mavenartifactid $ArtifactId$
  */
-agent MockAgent {
+agent AgentMock {
 	//
 }

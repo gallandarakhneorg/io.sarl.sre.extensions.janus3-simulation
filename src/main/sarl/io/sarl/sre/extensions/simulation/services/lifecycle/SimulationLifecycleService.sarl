@@ -138,7 +138,12 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 		this.lockRepo = new ReentrantReadWriteLock
 	}
 
-	protected override spawnAgent(nbAgents : int,
+	protected def doAgentSpawn(nbAgents : int, spawningAgent : UUID, parent : Context,
+		agentClazz : Class<? extends Agent>, params : Object[], agentIds : ()=>UUID) : void {
+		super.spawnAgent(nbAgents, spawningAgent, parent, agentClazz, params, agentIds)
+	}
+
+	protected final override spawnAgent(nbAgents : int,
 		spawningAgent : UUID,
 		parent : Context,
 		agentClazz : Class<? extends Agent>,
@@ -168,7 +173,11 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 		}
 	}
 
-	override killAgent(^agent : Agent, forceKillable : boolean) : boolean {
+	protected def doAgentKill(^agent : Agent, forceKillable : boolean) : boolean {
+		super.killAgent(^agent, forceKillable)
+	}
+
+	final override killAgent(^agent : Agent, forceKillable : boolean) : boolean {
 		assert ^agent !== null
 		val agentId = ^agent.ID
 		val life = getLifeOrNull(^agent)
@@ -235,7 +244,7 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 			}
 			if (addedAgents !== null) {
 				for (query : addedAgents) {
-					spawnAgent(query.agentId.size, query.spawningAgent, query.parent, query.agentClazz,
+					doAgentSpawn(query.agentId.size, query.spawningAgent, query.parent, query.agentClazz,
 						query.params, new AgentIdsProvider(query.agentId))
 				}
 			}
@@ -257,7 +266,7 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 			}
 			if (removedAgents !== null) {
 				for (^agent : removedAgents) {
-					super.killAgent(^agent, false)
+					doAgentKill(^agent, false)
 				}
 			}
 		}
@@ -280,8 +289,7 @@ class SimulationLifecycleService extends InjectionBasedLifecycleService {
 	}
 
 	protected override isEmptyRootContext(context : Context) : boolean {
-		super.isEmptyRootContext(context)
-		&& (this.agentsToAdd === null || this.agentsToAdd.empty)
+		super.isEmptyRootContext(context) && (this.agentsToAdd === null || this.agentsToAdd.empty)
 	}
 
 	/** Replies the agent with the identifier.

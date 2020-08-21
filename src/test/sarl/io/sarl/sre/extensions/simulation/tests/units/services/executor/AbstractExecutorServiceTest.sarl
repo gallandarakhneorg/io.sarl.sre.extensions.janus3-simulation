@@ -721,7 +721,7 @@ abstract class AbstractExecutorServiceTest<T extends ExecutorService> {
 	@Test
 	@DisplayName("executeNotBlockingTask 4 erroneous task with 3 tasks per group")
 	def executeNotBlockingTask_exception_4tasks_3members {
-		var exception = typeof(RuntimeException).mock
+		var exception = new RuntimeException
 		var run : Runnable = [throw exception]
 		doAnswer([
 			(it.getArgument(0) as Runnable).run

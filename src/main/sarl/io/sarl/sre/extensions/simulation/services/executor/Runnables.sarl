@@ -30,6 +30,7 @@ import io.sarl.sre.services.executor.SreCallable
 import java.util.concurrent.Callable
 import io.sarl.sre.services.executor.SreConsumer
 import java.util.function.Consumer
+import io.sarl.sre.services.executor.EarlyExitException
 
 /**
  * Future that embeddes a runnable task. 
@@ -131,6 +132,8 @@ class ScheduledFutureRunnable<T> extends SreRunnable implements SreScheduledFutu
 
 	package var finished = false
 
+	package var canceled = false
+
 	/** Construct.
 	 * 
 	 * @param runnable the task to run.
@@ -151,7 +154,13 @@ class ScheduledFutureRunnable<T> extends SreRunnable implements SreScheduledFutu
 	}
 
 	def cancel(mayInterruptIfRunning : boolean) : boolean {
-		false
+		if (!this.canceled && !this.finished) {
+			this.canceled = true
+			this.reschedulingTask = null
+			this.finished = true
+			return true
+		}
+		return false
 	}
 
 	def get : T {
@@ -163,22 +172,32 @@ class ScheduledFutureRunnable<T> extends SreRunnable implements SreScheduledFutu
 	}
 
 	def isCancelled : boolean {
-		false
+		return this.canceled
 	}
 
 	def isDone : boolean {
 		this.finished
 	}
 
+	private def reschedule {
+		if (this.reschedulingTask !== null) {
+			this.reschedulingTask.apply(this)
+		} else {
+			this.finished = true
+		}
+	}
+
 	override internalRun {
 		try {
 			wrappedRunnable?.run
-		} finally {
-			if (this.success && this.reschedulingTask !== null) {
-				this.reschedulingTask.apply(this)
+			reschedule
+		} catch (exception : Throwable) {
+			if (exception instanceof EarlyExitException) {
+				reschedule
 			} else {
 				this.finished = true
 			}
+			throw exception
 		}
 	}
 	

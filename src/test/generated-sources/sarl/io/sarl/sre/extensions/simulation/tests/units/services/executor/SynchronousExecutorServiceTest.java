@@ -40,6 +40,7 @@ import java.util.logging.Logger;
 import org.eclipse.xtext.xbase.lib.Exceptions;
 import org.eclipse.xtext.xbase.lib.Pure;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -60,11 +61,11 @@ import org.mockito.stubbing.Answer;
 @Tag("janus")
 @Tag("sre-unit")
 @Tag("sre-simulation")
-@SarlSpecification("0.11")
+@SarlSpecification("0.12")
 @SarlElementType(10)
 @SuppressWarnings("all")
 public class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<SynchronousExecutorService> {
-  @SarlSpecification("0.11")
+  @SarlSpecification("0.12")
   @SarlElementType(10)
   private static class FailingRunnable implements Runnable {
     private final RuntimeException ex = new RuntimeException();
@@ -100,7 +101,7 @@ public class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<
     }
   }
   
-  @SarlSpecification("0.11")
+  @SarlSpecification("0.12")
   @SarlElementType(10)
   private static class FailingCallable implements Callable<Object> {
     private final RuntimeException ex = new RuntimeException();
@@ -155,6 +156,7 @@ public class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<
     this.service.runScheduledTasks();
   }
   
+  @BeforeEach
   @Override
   public void setUp() {
     this.timeService = Mockito.<TimeService>mock(TimeService.class);

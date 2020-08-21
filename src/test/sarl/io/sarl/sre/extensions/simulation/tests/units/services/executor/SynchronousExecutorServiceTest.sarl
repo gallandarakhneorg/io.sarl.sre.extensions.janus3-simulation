@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.*
 import static extension org.junit.jupiter.api.Assertions.*
 import static extension org.mockito.ArgumentCaptor.*
 import static extension org.mockito.Mockito.*
+import org.junit.jupiter.api.BeforeEach
 
 /**
  * @author $Author: sgalland$
@@ -68,6 +69,7 @@ class SynchronousExecutorServiceTest extends AbstractExecutorServiceTest<Synchro
 		this.service.runScheduledTasks
 	}
 
+	@BeforeEach
 	override setUp {
 		this.timeService = typeof(TimeService).mock
 		when(this.timeService.timePrecision).thenReturn(TimeUnit::MILLISECONDS)

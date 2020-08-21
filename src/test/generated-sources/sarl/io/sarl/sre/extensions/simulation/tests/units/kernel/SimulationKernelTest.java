@@ -66,7 +66,7 @@ import org.mockito.stubbing.Answer;
 @Tag("janus")
 @Tag("sre-unit")
 @Tag("sre-simulation")
-@SarlSpecification("0.11")
+@SarlSpecification("0.12")
 @SarlElementType(10)
 @SuppressWarnings("all")
 public class SimulationKernelTest {

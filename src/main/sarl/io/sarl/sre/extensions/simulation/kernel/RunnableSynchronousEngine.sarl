@@ -33,7 +33,6 @@ import io.sarl.sre.services.lifecycle.LifecycleService
 import io.sarl.sre.services.logging.LoggingService
 import io.sarl.sre.services.time.TimeService
 import java.util.logging.Level
-import javax.inject.Inject
 import org.eclipse.xtend.lib.annotations.Accessors
 
 import static java.lang.Thread.*

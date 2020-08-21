@@ -63,7 +63,7 @@ import org.mockito.stubbing.Answer;
  * @mavenartifactid $ArtifactId$
  */
 @ExtendWith({ ContextInitExtension.class, JavaVersionCheckExtension.class, PropertyRestoreExtension.class })
-@SarlSpecification("0.11")
+@SarlSpecification("0.12")
 @SarlElementType(10)
 @SuppressWarnings("all")
 public abstract class AbstractExecutorServiceTest<T extends ExecutorService> {
@@ -759,7 +759,7 @@ public abstract class AbstractExecutorServiceTest<T extends ExecutorService> {
   @Test
   @DisplayName("executeNotBlockingTask 4 erroneous task with 3 tasks per group")
   public void executeNotBlockingTask_exception_4tasks_3members() {
-    RuntimeException exception = TestMockito.<RuntimeException>mock(RuntimeException.class);
+    RuntimeException exception = new RuntimeException();
     final Runnable _function = () -> {
       throw exception;
     };

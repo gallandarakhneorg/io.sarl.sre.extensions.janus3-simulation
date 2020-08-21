@@ -7,5 +7,4 @@ io.sarl.sre.extensions.simulation.boot.internal.kernel.SimulationKernelModulePro
 io.sarl.sre.extensions.simulation.boot.internal.services.SimulatedTimeServiceModuleProvider
 io.sarl.sre.extensions.simulation.boot.internal.services.SimulationLifecycleServiceModuleProvider
 io.sarl.sre.extensions.simulation.boot.internal.services.SynchronousExecutorServiceModuleProvider
-io.sarl.sre.extensions.simulation.boot.internal.services.SimulationJulLoggerCreatorModuleProvider
 io.sarl.sre.extensions.simulation.boot.internal.skills.SimulationEventBusModuleProvider

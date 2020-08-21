@@ -28,7 +28,7 @@ import io.sarl.lang.core.Event;
 import io.sarl.sre.capacities.InternalSchedules;
 import io.sarl.sre.extensions.simulation.skills.SynchronizedEventBus;
 import io.sarl.sre.extensions.simulation.skills.TimestampedEvent;
-import io.sarl.sre.internal.eventguard.BehaviorGuardEvaluatorRegistry;
+import io.sarl.sre.internal.eventguard.IBehaviorGuardEvaluatorRegistry;
 import io.sarl.sre.test.framework.extension.PropertyRestoreExtension;
 import io.sarl.tests.api.Nullable;
 import io.sarl.tests.api.extensions.ContextInitExtension;
@@ -59,7 +59,7 @@ import org.mockito.Mockito;
 @Tag("janus")
 @Tag("sre-unit")
 @Tag("sre-simulation")
-@SarlSpecification("0.11")
+@SarlSpecification("0.12")
 @SarlElementType(10)
 @SuppressWarnings("all")
 public class SynchronizedEventBusTest {
@@ -69,7 +69,7 @@ public class SynchronizedEventBusTest {
    * @mavengroupid $GroupId$
    * @mavenartifactid $ArtifactId$
    */
-  @SarlSpecification("0.11")
+  @SarlSpecification("0.12")
   @SarlElementType(10)
   public static class TestEvent extends TimestampedEvent {
     public TestEvent(final double time) {
@@ -85,7 +85,7 @@ public class SynchronizedEventBusTest {
   private InternalSchedules taskScheduler;
   
   @Nullable
-  private BehaviorGuardEvaluatorRegistry dispatcher;
+  private IBehaviorGuardEvaluatorRegistry dispatcher;
   
   @Nullable
   private SynchronizedEventBus eventBus;
@@ -97,7 +97,7 @@ public class SynchronizedEventBusTest {
   public void setUp() {
     this.logger = Mockito.<Logger>mock(Logger.class);
     this.taskScheduler = Mockito.<InternalSchedules>mock(InternalSchedules.class);
-    this.dispatcher = Mockito.<BehaviorGuardEvaluatorRegistry>mock(BehaviorGuardEvaluatorRegistry.class);
+    this.dispatcher = Mockito.<IBehaviorGuardEvaluatorRegistry>mock(IBehaviorGuardEvaluatorRegistry.class);
     final Supplier<InternalSchedules> _function = () -> {
       return this.taskScheduler;
     };
@@ -122,7 +122,7 @@ public class SynchronizedEventBusTest {
     Assertions.assertTrue(iterator.hasNext());
     Assertions.assertSame(event, iterator.next());
     Assertions.assertFalse(iterator.hasNext());
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -143,7 +143,7 @@ public class SynchronizedEventBusTest {
     Assertions.assertTrue(iterator.hasNext());
     Assertions.assertSame(event, iterator.next());
     Assertions.assertFalse(iterator.hasNext());
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -164,7 +164,7 @@ public class SynchronizedEventBusTest {
     events = this.eventBus.getNotImmediatelyFirableEvents();
     iterator = events.iterator();
     Assertions.assertFalse(iterator.hasNext());
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -183,7 +183,7 @@ public class SynchronizedEventBusTest {
     events = this.eventBus.getNotImmediatelyFirableEvents();
     iterator = events.iterator();
     Assertions.assertFalse(iterator.hasNext());
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -203,7 +203,7 @@ public class SynchronizedEventBusTest {
     events = this.eventBus.getNotImmediatelyFirableEvents();
     iterator = events.iterator();
     Assertions.assertFalse(iterator.hasNext());
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -223,14 +223,14 @@ public class SynchronizedEventBusTest {
     events = this.eventBus.getNotImmediatelyFirableEvents();
     iterator = events.iterator();
     Assertions.assertFalse(iterator.hasNext());
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
   @DisplayName("fireBufferedEventsOnBus empty buffer w/o time move")
   public void fireBufferedEventsOnBus_emptyBuffer_noMoveToTime() {
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -238,7 +238,7 @@ public class SynchronizedEventBusTest {
   public void fireBufferedEventsOnBus_emptyBuffer_moveToTime() {
     this.eventBus.moveToTime(1000.0);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -247,7 +247,7 @@ public class SynchronizedEventBusTest {
     Event event0 = Mockito.<Event>mock(Event.class);
     this.eventBus.asyncDispatch(event0, this.logger);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -257,7 +257,7 @@ public class SynchronizedEventBusTest {
     this.eventBus.asyncDispatch(event0, this.logger);
     this.eventBus.moveToTime(1000.0);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.only()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.only()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -266,7 +266,7 @@ public class SynchronizedEventBusTest {
     SynchronizedEventBusTest.TestEvent event0 = Mockito.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123.456));
     this.eventBus.asyncDispatch(event0, this.logger);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.only()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.only()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -276,7 +276,7 @@ public class SynchronizedEventBusTest {
     this.eventBus.asyncDispatch(event0, this.logger);
     this.eventBus.moveToTime(1000.0);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.only()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.only()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -285,7 +285,7 @@ public class SynchronizedEventBusTest {
     SynchronizedEventBusTest.TestEvent event0 = Mockito.<SynchronizedEventBusTest.TestEvent>spy(new SynchronizedEventBusTest.TestEvent(123456.0));
     this.eventBus.asyncDispatch(event0, this.logger);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -295,7 +295,7 @@ public class SynchronizedEventBusTest {
     this.eventBus.asyncDispatch(event0, this.logger);
     this.eventBus.moveToTime(1000.0);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.never()).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -306,7 +306,7 @@ public class SynchronizedEventBusTest {
     Event event1 = Mockito.<Event>mock(Event.class);
     this.eventBus.asyncDispatch(event1, this.logger);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.times(1)).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.times(1)).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Test
@@ -318,7 +318,7 @@ public class SynchronizedEventBusTest {
     this.eventBus.asyncDispatch(event1, this.logger);
     this.eventBus.moveToTime(1000.0);
     this.eventBus.fireBufferedEventsOnBus(1000.0);
-    /* Mockito.<BehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.times(2)).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
+    /* Mockito.<IBehaviorGuardEvaluatorRegistry>verify(this.dispatcher, Mockito.times(2)).getBehaviorGuardEvaluators(ArgumentMatchers.<Event>any(Event.class)); */
   }
   
   @Override

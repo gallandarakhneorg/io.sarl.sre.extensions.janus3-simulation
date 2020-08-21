@@ -21,33 +21,25 @@
 
 package io.sarl.sre.extensions.simulation.tests.units.services.lifecycle
 
-import io.sarl.lang.core.Agent
 import io.sarl.sarlspecification.SarlSpecificationChecker
-import io.sarl.sre.boot.configs.SreConfig
-import io.sarl.sre.extensions.simulation.services.lifecycle.SimulationLifecycleService
-import io.sarl.sre.internal.SequenceListenerNotifier
-import io.sarl.sre.internal.SmartListenerCollection
+import io.sarl.sre.extensions.simulation.tests.units.services.lifecycle.mocks.AgentMock
+import io.sarl.sre.extensions.simulation.tests.units.services.lifecycle.mocks.ServiceMock
 import io.sarl.sre.services.context.Context
-import io.sarl.sre.services.context.ExternalContextMemberListener
-import io.sarl.sre.services.executor.ExecutorService
 import io.sarl.sre.services.lifecycle.AgentCreatorProvider
-import io.sarl.sre.services.lifecycle.LifecycleServiceListener
-import io.sarl.sre.services.lifecycle.SkillUninstaller
-import io.sarl.sre.services.logging.LoggingService
+import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 import io.sarl.tests.api.Nullable
+import io.sarl.tests.api.extensions.ContextInitExtension
+import io.sarl.tests.api.extensions.JavaVersionCheckExtension
 import java.util.UUID
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.^extension.ExtendWith
 
 import static extension org.junit.jupiter.api.Assertions.*
 import static extension org.mockito.ArgumentMatchers.*
 import static extension org.mockito.Mockito.*
-import org.junit.jupiter.api.^extension.ExtendWith
-import io.sarl.tests.api.extensions.ContextInitExtension
-import io.sarl.tests.api.extensions.JavaVersionCheckExtension
-import io.sarl.sre.test.framework.^extension.PropertyRestoreExtension
 
 /**
  * @author $Author: sgalland$
@@ -74,14 +66,14 @@ class SimulationLifecycleServiceTest {
 	var checker : SarlSpecificationChecker
 
 	@Nullable
-	var service : MockService 
+	var service : ServiceMock
 
 	@BeforeEach
 	def setUp : void {
 		this.agentFactoryProvider = typeof(AgentCreatorProvider).mock
 		this.checker = typeof(SarlSpecificationChecker).mock
 		when(this.checker.isValidSarlElement(typeof(Class).any)).thenReturn(true)
-		this.service = new MockService(this.checker, this.agentFactoryProvider)
+		this.service = new ServiceMock(this.checker, this.agentFactoryProvider)
 	}
 
 	protected def addAgentMock(id : UUID) : void {
@@ -90,7 +82,7 @@ class SimulationLifecycleServiceTest {
 			UUID::randomUUID,
 			typeof(Context).mock,
 			id,
-			typeof(MockAgent),
+			typeof(AgentMock),
 			#[])
 	}
 
@@ -290,48 +282,6 @@ class SimulationLifecycleServiceTest {
 		removeAgentMock(id1)
 		this.service.synchronizeAgentList
 		this.service.hasAgent.assertFalse
-	}
-
-	/**
-	 * @author $Author: sgalland$
-	 * @version $FullVersion$
-	 * @mavengroupid $GroupId$
-	 * @mavenartifactid $ArtifactId$
-	 */
-	static class MockService extends SimulationLifecycleService {
-
-		new (sarlSpecificationChecker : SarlSpecificationChecker,
-				agentFactoryProvider : AgentCreatorProvider) {
-			super(
-				sarlSpecificationChecker,
-				agentFactoryProvider,
-				new SmartListenerCollection(new SequenceListenerNotifier),
-				[typeof(LifecycleServiceListener).mock],
-				[typeof(ExternalContextMemberListener).mock],
-				typeof(SkillUninstaller).mock,
-				typeof(ExecutorService).mock,
-				typeof(LoggingService).mock,
-				typeof(SreConfig).mock)
-		}
-
-		override canSpawnAgent : boolean {
-			return true
-		}
-
-		protected override spawnAgent(nbAgents : int, spawningAgent : UUID, parent : Context, agentClazz : Class<? extends Agent>,
-			params : Object[], agentIds : ()=>UUID) : void {
-			var id = agentIds.apply()
-			id.assertNotNull
-			var ^agent = typeof(Agent).mock
-			when(^agent.ID).thenReturn(id)
-			^agent.onAgentCreated
-		}
-		
-		override killAgent(^agent : Agent, forceKillable : boolean) : boolean {
-			^agent.onAgentKilled
-			return true
-		}
-
 	}
 
 }
